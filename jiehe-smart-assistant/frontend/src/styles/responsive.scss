@@ -1,0 +1,354 @@
+/**
+ * 响应式设计系统
+ * 定义断点、间距、字体大小等响应式规则
+ */
+
+// 设备断点定义
+$breakpoints: (
+  'xs': 320px,   // 超小屏幕 - 小手机
+  'sm': 375px,   // 小屏幕 - 常规手机
+  'md': 768px,   // 中等屏幕 - 平板
+  'lg': 1024px,  // 大屏幕 - 小笔记本
+  'xl': 1200px,  // 超大屏幕 - 桌面
+  'xxl': 1600px  // 超超大屏幕 - 大桌面
+);
+
+// 响应式混入
+@mixin respond-to($breakpoint) {
+  @if map-has-key($breakpoints, $breakpoint) {
+    @media (min-width: map-get($breakpoints, $breakpoint)) {
+      @content;
+    }
+  }
+}
+
+// 响应式字体大小
+$font-sizes: (
+  'xs': (
+    'h1': 24px,
+    'h2': 20px,
+    'h3': 18px,
+    'body': 14px,
+    'small': 12px,
+    'caption': 10px
+  ),
+  'sm': (
+    'h1': 28px,
+    'h2': 24px,
+    'h3': 20px,
+    'body': 16px,
+    'small': 14px,
+    'caption': 12px
+  ),
+  'md': (
+    'h1': 32px,
+    'h2': 28px,
+    'h3': 24px,
+    'body': 18px,
+    'small': 16px,
+    'caption': 14px
+  ),
+  'lg': (
+    'h1': 36px,
+    'h2': 32px,
+    'h3': 28px,
+    'body': 20px,
+    'small': 18px,
+    'caption': 16px
+  )
+);
+
+// 响应式间距
+$spacing: (
+  'xs': (
+    'xs': 4px,
+    'sm': 8px,
+    'md': 12px,
+    'lg': 16px,
+    'xl': 20px
+  ),
+  'sm': (
+    'xs': 6px,
+    'sm': 12px,
+    'md': 16px,
+    'lg': 20px,
+    'xl': 24px
+  ),
+  'md': (
+    'xs': 8px,
+    'sm': 16px,
+    'md': 20px,
+    'lg': 24px,
+    'xl': 32px
+  ),
+  'lg': (
+    'xs': 12px,
+    'sm': 20px,
+    'md': 24px,
+    'lg': 32px,
+    'xl': 40px
+  )
+);
+
+// 字体大小混入
+@mixin font-responsive($type: 'body') {
+  font-size: map-get(map-get($font-sizes, 'xs'), $type);
+  
+  @include respond-to('sm') {
+    font-size: map-get(map-get($font-sizes, 'sm'), $type);
+  }
+  
+  @include respond-to('md') {
+    font-size: map-get(map-get($font-sizes, 'md'), $type);
+  }
+  
+  @include respond-to('lg') {
+    font-size: map-get(map-get($font-sizes, 'lg'), $type);
+  }
+}
+
+// 间距混入
+@mixin spacing-responsive($property, $size: 'md') {
+  #{$property}: map-get(map-get($spacing, 'xs'), $size);
+  
+  @include respond-to('sm') {
+    #{$property}: map-get(map-get($spacing, 'sm'), $size);
+  }
+  
+  @include respond-to('md') {
+    #{$property}: map-get(map-get($spacing, 'md'), $size);
+  }
+  
+  @include respond-to('lg') {
+    #{$property}: map-get(map-get($spacing, 'lg'), $size);
+  }
+}
+
+// 容器宽度
+@mixin container-responsive() {
+  width: 100%;
+  max-width: 100%;
+  padding: 0 16px;
+  
+  @include respond-to('sm') {
+    padding: 0 20px;
+  }
+  
+  @include respond-to('md') {
+    max-width: 768px;
+    margin: 0 auto;
+    padding: 0 24px;
+  }
+  
+  @include respond-to('lg') {
+    max-width: 1024px;
+    padding: 0 32px;
+  }
+  
+  @include respond-to('xl') {
+    max-width: 1200px;
+    padding: 0 40px;
+  }
+}
+
+// 网格系统
+@mixin grid-responsive($columns: 1) {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: repeat($columns, 1fr);
+  
+  @include respond-to('sm') {
+    gap: 20px;
+    grid-template-columns: repeat(min($columns * 2, 2), 1fr);
+  }
+  
+  @include respond-to('md') {
+    gap: 24px;
+    grid-template-columns: repeat(min($columns * 3, 3), 1fr);
+  }
+  
+  @include respond-to('lg') {
+    gap: 32px;
+    grid-template-columns: repeat(min($columns * 4, 4), 1fr);
+  }
+}
+
+// 弹性布局
+@mixin flex-responsive($direction: 'column') {
+  display: flex;
+  gap: 16px;
+  
+  @if $direction == 'column' {
+    flex-direction: column;
+    
+    @include respond-to('md') {
+      flex-direction: row;
+    }
+  } @else {
+    flex-direction: $direction;
+  }
+  
+  @include respond-to('sm') {
+    gap: 20px;
+  }
+  
+  @include respond-to('md') {
+    gap: 24px;
+  }
+}
+
+// 卡片样式
+@mixin card-responsive() {
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+  
+  @include spacing-responsive('padding', 'md');
+  
+  @include respond-to('md') {
+    border-radius: 12px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+  }
+  
+  @include respond-to('lg') {
+    border-radius: 16px;
+    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.1);
+  }
+}
+
+// 按钮样式
+@mixin button-responsive() {
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  
+  @include font-responsive('body');
+  @include spacing-responsive('padding', 'sm');
+  
+  &:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  }
+  
+  &:active {
+    transform: translateY(0);
+  }
+  
+  @include respond-to('md') {
+    border-radius: 8px;
+  }
+  
+  @include respond-to('lg') {
+    border-radius: 10px;
+  }
+}
+
+// 输入框样式
+@mixin input-responsive() {
+  border: 1px solid #e1e5e9;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+  
+  @include font-responsive('body');
+  @include spacing-responsive('padding', 'sm');
+  
+  &:focus {
+    outline: none;
+    border-color: var(--van-primary-color);
+    box-shadow: 0 0 0 2px rgba(25, 137, 250, 0.1);
+  }
+  
+  @include respond-to('md') {
+    border-radius: 8px;
+  }
+}
+
+// 工具类
+.responsive-container {
+  @include container-responsive();
+}
+
+.responsive-grid {
+  @include grid-responsive();
+}
+
+.responsive-flex {
+  @include flex-responsive();
+}
+
+.responsive-card {
+  @include card-responsive();
+}
+
+.responsive-button {
+  @include button-responsive();
+}
+
+.responsive-input {
+  @include input-responsive();
+}
+
+// 隐藏/显示工具类
+.hide-on-mobile {
+  @media (max-width: map-get($breakpoints, 'md') - 1px) {
+    display: none !important;
+  }
+}
+
+.hide-on-tablet {
+  @media (min-width: map-get($breakpoints, 'md')) and (max-width: map-get($breakpoints, 'lg') - 1px) {
+    display: none !important;
+  }
+}
+
+.hide-on-desktop {
+  @media (min-width: map-get($breakpoints, 'lg')) {
+    display: none !important;
+  }
+}
+
+.show-on-mobile {
+  @media (min-width: map-get($breakpoints, 'md')) {
+    display: none !important;
+  }
+}
+
+.show-on-tablet {
+  @media (max-width: map-get($breakpoints, 'md') - 1px), (min-width: map-get($breakpoints, 'lg')) {
+    display: none !important;
+  }
+}
+
+.show-on-desktop {
+  @media (max-width: map-get($breakpoints, 'lg') - 1px) {
+    display: none !important;
+  }
+}
+
+// 文本对齐工具类
+.text-center-mobile {
+  @media (max-width: map-get($breakpoints, 'md') - 1px) {
+    text-align: center;
+  }
+}
+
+.text-left-desktop {
+  @media (min-width: map-get($breakpoints, 'lg')) {
+    text-align: left;
+  }
+}
+
+// 宽度工具类
+.full-width-mobile {
+  @media (max-width: map-get($breakpoints, 'md') - 1px) {
+    width: 100% !important;
+  }
+}
+
+.auto-width-desktop {
+  @media (min-width: map-get($breakpoints, 'lg')) {
+    width: auto !important;
+  }
+}

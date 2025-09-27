@@ -1,0 +1,391 @@
+/**
+ * 主样式文件
+ * 集成响应式设计、移动端优化和主题系统
+ */
+
+// 导入响应式设计系统
+@import './responsive.scss';
+
+// CSS自定义属性（CSS变量）
+:root {
+  // 主题色彩
+  --primary-color: #667eea;
+  --primary-light: #8fa4f3;
+  --primary-dark: #4865d4;
+  --secondary-color: #764ba2;
+  --accent-color: #f093fb;
+  
+  // 状态颜色
+  --success-color: #07c160;
+  --warning-color: #ff976a;
+  --error-color: #ee0a24;
+  --info-color: #1989fa;
+  
+  // 灰度色系
+  --gray-50: #f9fafb;
+  --gray-100: #f3f4f6;
+  --gray-200: #e5e7eb;
+  --gray-300: #d1d5db;
+  --gray-400: #9ca3af;
+  --gray-500: #6b7280;
+  --gray-600: #4b5563;
+  --gray-700: #374151;
+  --gray-800: #1f2937;
+  --gray-900: #111827;
+  
+  // 背景色
+  --bg-primary: #ffffff;
+  --bg-secondary: #f8f9fa;
+  --bg-tertiary: #f3f4f6;
+  --bg-overlay: rgba(0, 0, 0, 0.5);
+  
+  // 文字颜色
+  --text-primary: #1f2937;
+  --text-secondary: #6b7280;
+  --text-tertiary: #9ca3af;
+  --text-inverse: #ffffff;
+  
+  // 边框色
+  --border-light: #e5e7eb;
+  --border-medium: #d1d5db;
+  --border-dark: #9ca3af;
+  
+  // 阴影
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+  
+  // 圆角
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --radius-xl: 12px;
+  --radius-2xl: 16px;
+  --radius-full: 9999px;
+  
+  // 间距
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 16px;
+  --spacing-lg: 24px;
+  --spacing-xl: 32px;
+  --spacing-2xl: 48px;
+  
+  // 动画
+  --transition-fast: 0.15s ease-out;
+  --transition-normal: 0.25s ease-out;
+  --transition-slow: 0.35s ease-out;
+  
+  // 字体
+  --font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans', sans-serif;
+  --font-mono: SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+}
+
+// 暗色主题
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg-primary: #1f2937;
+    --bg-secondary: #111827;
+    --bg-tertiary: #0f172a;
+    --bg-overlay: rgba(0, 0, 0, 0.8);
+    
+    --text-primary: #f9fafb;
+    --text-secondary: #d1d5db;
+    --text-tertiary: #9ca3af;
+    --text-inverse: #1f2937;
+    
+    --border-light: #374151;
+    --border-medium: #4b5563;
+    --border-dark: #6b7280;
+  }
+}
+
+// 全局重置和基础样式
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  font-size: 16px;
+  line-height: 1.5;
+  
+  @include respond-to('xs') {
+    font-size: 14px;
+  }
+  
+  @include respond-to('lg') {
+    font-size: 18px;
+  }
+}
+
+body {
+  font-family: var(--font-family);
+  color: var(--text-primary);
+  background-color: var(--bg-secondary);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  
+  // 移动端优化
+  -webkit-text-size-adjust: 100%;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+// 链接样式
+a {
+  color: var(--primary-color);
+  text-decoration: none;
+  transition: color var(--transition-fast);
+  
+  &:hover {
+    color: var(--primary-dark);
+  }
+  
+  &:active {
+    color: var(--primary-light);
+  }
+}
+
+// 标题样式
+h1, h2, h3, h4, h5, h6 {
+  font-weight: 600;
+  line-height: 1.25;
+  margin-bottom: var(--spacing-sm);
+  color: var(--text-primary);
+}
+
+h1 { @include font-responsive('h1'); }
+h2 { @include font-responsive('h2'); }
+h3 { @include font-responsive('h3'); }
+
+// 段落样式
+p {
+  margin-bottom: var(--spacing-md);
+  @include font-responsive('body');
+}
+
+// 列表样式
+ul, ol {
+  margin-left: var(--spacing-lg);
+  margin-bottom: var(--spacing-md);
+}
+
+// 图片样式
+img {
+  max-width: 100%;
+  height: auto;
+  border-radius: var(--radius-md);
+}
+
+// 表单元素样式
+input, textarea, select {
+  @include input-responsive();
+  width: 100%;
+  font-family: inherit;
+  font-size: inherit;
+}
+
+button {
+  @include button-responsive();
+  font-family: inherit;
+  background: var(--primary-color);
+  color: var(--text-inverse);
+  
+  &:hover {
+    background: var(--primary-dark);
+  }
+  
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+}
+
+// 卡片样式
+.card {
+  @include card-responsive();
+}
+
+// 容器样式
+.container {
+  @include container-responsive();
+}
+
+// 工具类
+.text-center { text-align: center; }
+.text-left { text-align: left; }
+.text-right { text-align: right; }
+
+.font-bold { font-weight: 700; }
+.font-semibold { font-weight: 600; }
+.font-medium { font-weight: 500; }
+
+.text-primary { color: var(--text-primary); }
+.text-secondary { color: var(--text-secondary); }
+.text-tertiary { color: var(--text-tertiary); }
+
+.bg-primary { background-color: var(--bg-primary); }
+.bg-secondary { background-color: var(--bg-secondary); }
+
+.border { border: 1px solid var(--border-light); }
+.border-radius { border-radius: var(--radius-md); }
+
+.shadow-sm { box-shadow: var(--shadow-sm); }
+.shadow-md { box-shadow: var(--shadow-md); }
+.shadow-lg { box-shadow: var(--shadow-lg); }
+
+.transition { transition: all var(--transition-normal); }
+
+// 间距工具类
+.p-xs { padding: var(--spacing-xs); }
+.p-sm { padding: var(--spacing-sm); }
+.p-md { padding: var(--spacing-md); }
+.p-lg { padding: var(--spacing-lg); }
+
+.m-xs { margin: var(--spacing-xs); }
+.m-sm { margin: var(--spacing-sm); }
+.m-md { margin: var(--spacing-md); }
+.m-lg { margin: var(--spacing-lg); }
+
+.mb-xs { margin-bottom: var(--spacing-xs); }
+.mb-sm { margin-bottom: var(--spacing-sm); }
+.mb-md { margin-bottom: var(--spacing-md); }
+.mb-lg { margin-bottom: var(--spacing-lg); }
+
+// Vant UI 组件自定义
+:root {
+  // 覆盖 Vant 默认变量
+  --van-primary-color: var(--primary-color);
+  --van-success-color: var(--success-color);
+  --van-warning-color: var(--warning-color);
+  --van-danger-color: var(--error-color);
+  --van-info-color: var(--info-color);
+  
+  --van-text-color: var(--text-primary);
+  --van-text-color-2: var(--text-secondary);
+  --van-text-color-3: var(--text-tertiary);
+  
+  --van-background: var(--bg-primary);
+  --van-background-2: var(--bg-secondary);
+  
+  --van-border-color: var(--border-light);
+  --van-radius-md: var(--radius-md);
+  --van-radius-lg: var(--radius-lg);
+}
+
+// 移动端特定样式
+@media (hover: none) and (pointer: coarse) {
+  // 触摸设备优化
+  button, .van-button {
+    min-height: 44px;
+    min-width: 44px;
+  }
+  
+  .van-cell {
+    min-height: 44px;
+  }
+  
+  // 增大点击区域
+  a, button, [role="button"] {
+    position: relative;
+    
+    &::before {
+      content: '';
+      position: absolute;
+      top: -8px;
+      left: -8px;
+      right: -8px;
+      bottom: -8px;
+      z-index: -1;
+    }
+  }
+}
+
+// 高 DPI 屏幕优化
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+  .border {
+    border-width: 0.5px;
+  }
+}
+
+// 无障碍性支持
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+// 打印样式
+@media print {
+  body {
+    background: white;
+    color: black;
+  }
+  
+  .van-tabbar,
+  .van-nav-bar,
+  .floating-panel,
+  .gesture-hints {
+    display: none !important;
+  }
+}
+
+// 焦点样式
+:focus {
+  outline: 2px solid var(--primary-color);
+  outline-offset: 2px;
+}
+
+:focus:not(:focus-visible) {
+  outline: none;
+}
+
+// 选择文本样式
+::selection {
+  background-color: var(--primary-light);
+  color: var(--text-inverse);
+}
+
+// 滚动条样式
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-tertiary);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border-medium);
+  border-radius: var(--radius-full);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--border-dark);
+}
+
+// 加载动画
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes bounce {
+  0%, 100% { transform: translateY(-25%); animation-timing-function: cubic-bezier(0.8, 0, 1, 1); }
+  50% { transform: translateY(0); animation-timing-function: cubic-bezier(0, 0, 0.2, 1); }
+}
+
+.animate-pulse { animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+.animate-spin { animation: spin 1s linear infinite; }
+.animate-bounce { animation: bounce 1s infinite; }

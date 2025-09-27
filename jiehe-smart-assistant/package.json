@@ -1,0 +1,14 @@
+{
+  "name": "jiehe-smart-assistant-root",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Root scripts for JieHe Smart Assistant (convenience dev commands)",
+  "scripts": {
+    "install:all": "npm --prefix backend install && npm --prefix frontend install",
+    "dev": "concurrently -n backend,frontend -c green,blue \"npm --prefix backend run dev\" \"npm --prefix frontend run dev\""
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}
+
