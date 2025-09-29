@@ -1,7 +1,7 @@
 <template>
   <div class="task-board">
     <!-- 头部导航 -->
-    <nav-bar 
+    <van-nav-bar 
       title="家务任务" 
       left-arrow 
       @click-left="router.back()"

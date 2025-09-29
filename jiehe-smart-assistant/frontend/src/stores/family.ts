@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { familyApi } from '@/api/family'
 import type { IFamily, IFamilyMember, CreateFamilyData } from '@/types/family'
+import { useUserStore } from '@/stores/user'
 
 export const useFamilyStore = defineStore('family', () => {
   // 状态
@@ -39,6 +40,9 @@ export const useFamilyStore = defineStore('family', () => {
       loading.value = true
       const response = await familyApi.createFamily(familyData)
       families.value.unshift(response.data)
+      // 将新建家庭设为当前家庭
+      const userStore = useUserStore()
+      userStore.currentFamily = response.data as any
       return response.data
     } catch (error) {
       console.error('创建家庭失败:', error)
@@ -54,6 +58,8 @@ export const useFamilyStore = defineStore('family', () => {
       loading.value = true
       const response = await familyApi.joinFamily(inviteCode)
       families.value.unshift(response.data)
+      const userStore = useUserStore()
+      userStore.currentFamily = response.data as any
       return response.data
     } catch (error) {
       console.error('加入家庭失败:', error)

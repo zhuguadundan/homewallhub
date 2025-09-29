@@ -1,7 +1,6 @@
 import { dbAll, dbGet, dbRun } from '../config/database';
 import { logger } from '../utils/logger';
 import { socketManager } from '../middleware/socket';
-import { IReminder, ICalendarEvent } from '../interfaces/calendar';
 
 export class CalendarReminderService {
   private static checkInterval: NodeJS.Timeout | null = null;
@@ -43,155 +42,125 @@ export class CalendarReminderService {
   }
 
   /**
-   * 检查并发送提醒
+   * 检查并发送提醒（基于 calendar_events.reminder_times，而非独立提醒表）
    */
   static async checkAndSendReminders(): Promise<void> {
     const now = new Date();
-    
-    // 获取需要发送的提醒
-    const pendingReminders = await dbAll<IReminder & { 
-      event_title: string;
-      event_start_time: string;
+
+    // 查询未来的且设置了提醒时间的事件
+    const events = await dbAll<{
+      id: string;
       family_id: string;
-    }>(`
-      SELECT 
-        r.*,
-        e.title as event_title,
-        e.start_time as event_start_time,
-        e.family_id
-      FROM calendar_reminders r
-      JOIN calendar_events e ON r.event_id = e.id
-      WHERE r.is_sent = 0 
-        AND e.is_active = 1
-        AND e.status NOT IN ('cancelled', 'completed')
-        AND datetime(e.start_time, '-' || r.remind_before_minutes || ' minutes') <= datetime('now')
-        AND datetime(e.start_time) > datetime('now')
-    `);
+      title: string;
+      start_time: string;
+      reminder_times: string | null;
+      created_by: string | null;
+    }>(
+      `SELECT id, family_id, title, start_time, reminder_times, created_by
+       FROM calendar_events
+       WHERE is_deleted = 0
+         AND datetime(start_time) > datetime('now')
+         AND reminder_times IS NOT NULL`
+    );
 
-    for (const reminder of pendingReminders) {
+    for (const e of events) {
+      if (!e.reminder_times) continue;
+
+      let reminders: number[] = [];
       try {
-        await this.sendReminder(reminder);
-        
-        // 标记为已发送
-        await dbRun(`
-          UPDATE calendar_reminders 
-          SET is_sent = 1, sent_at = ? 
-          WHERE id = ?
-        `, [now.toISOString(), reminder.id]);
+        const parsed = JSON.parse(e.reminder_times);
+        if (Array.isArray(parsed)) {
+          reminders = parsed.map((n) => Number(n)).filter((n) => !isNaN(n) && n >= 0);
+        }
+      } catch {
+        // 非法 JSON，跳过
+        continue;
+      }
 
-        logger.info('日历提醒发送成功', {
-          reminderId: reminder.id,
-          eventTitle: reminder.event_title,
-          reminderType: reminder.reminder_type
-        });
-      } catch (error) {
-        logger.error('发送日历提醒失败', {
-          reminderId: reminder.id,
-          error
-        });
+      if (reminders.length === 0) continue;
+
+      const startTs = new Date(e.start_time).getTime();
+      const diffMinutes = Math.ceil((startTs - now.getTime()) / (1000 * 60));
+
+      // 在一分钟粒度内触发：如果 diffMinutes 正好等于某个提醒阈值
+      for (const m of reminders) {
+        if (diffMinutes === m) {
+          const sent = await this.hasSentReminder(e.id, m);
+          if (!sent) {
+            const message = `提醒：${e.title} 将在${m}分钟后开始`;
+            await this.sendInAppNotificationByEvent(e, message, m);
+          }
+        }
       }
     }
   }
 
   /**
-   * 发送单个提醒
+   * 检查是否已对某事件在指定分钟数发送过提醒（通过 notifications 表去重）
    */
-  private static async sendReminder(reminder: IReminder & { 
-    event_title: string;
-    event_start_time: string;
-    family_id: string;
-  }): Promise<void> {
-    const eventStartTime = new Date(reminder.event_start_time);
-    const timeToEvent = Math.ceil((eventStartTime.getTime() - new Date().getTime()) / (1000 * 60));
-    
-    const message = reminder.message || 
-      `提醒：${reminder.event_title} 将在${timeToEvent}分钟后开始`;
-
-    switch (reminder.reminder_type) {
-      case 'notification':
-        await this.sendInAppNotification(reminder, message);
-        break;
-      case 'email':
-        await this.sendEmailReminder(reminder, message);
-        break;
-      case 'sms':
-        await this.sendSmsReminder(reminder, message);
-        break;
-      default:
-        logger.warn('未知的提醒类型:', reminder.reminder_type);
-    }
+  private static async hasSentReminder(eventId: string, minutes: number): Promise<boolean> {
+    const row = await dbGet<{ cnt: number }>(
+      `SELECT COUNT(*) as cnt
+       FROM notifications
+       WHERE reference_type = 'calendar'
+         AND reference_id = ?
+         AND title = '日历提醒'
+         AND content LIKE ?
+         AND datetime(created_at) >= datetime('now', '-1 day')`,
+      [eventId, `%将在${minutes}分钟后开始%`]
+    );
+    return (row?.cnt || 0) > 0;
   }
 
   /**
-   * 发送应用内通知
+   * 发送应用内通知（基于事件，通知参与者；若无参与者则通知创建者）
    */
-  private static async sendInAppNotification(reminder: IReminder & { 
-    event_title: string;
-    family_id: string;
-  }, message: string): Promise<void> {
-    // 获取接收者
-    const recipients = reminder.recipient_id ? 
-      [reminder.recipient_id] : 
-      await this.getEventParticipants(reminder.event_id);
+  private static async sendInAppNotificationByEvent(
+    event: { id: string; family_id: string; title: string; start_time: string; created_by: string | null },
+    message: string,
+    minutes: number
+  ): Promise<void> {
+    // 参与者（若无记录则尝试用创建者作为接收者）
+    let recipients = await this.getEventParticipants(event.id);
+    if (recipients.length === 0 && event.created_by) {
+      recipients = [event.created_by];
+    }
 
-    // 创建通知记录
     for (const userId of recipients) {
       const notificationId = require('uuid').v4();
-      await dbRun(`
-        INSERT INTO notifications (
-          id, family_id, user_id, title, message, type, 
-          priority, data, created_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-      `, [
-        notificationId,
-        reminder.family_id,
-        userId,
-        '日历提醒',
-        message,
-        'calendar',
-        'normal',
-        JSON.stringify({
-          event_id: reminder.event_id,
-          reminder_id: reminder.id
-        }),
-        new Date().toISOString()
-      ]);
+      await dbRun(
+        `INSERT INTO notifications (
+           id, user_id, family_id, title, content, type, reference_type, reference_id, is_read, created_at
+         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, ?)`,
+        [
+          notificationId,
+          userId,
+          event.family_id,
+          '日历提醒',
+          message,
+          'calendar',
+          'calendar',
+          event.id,
+          new Date().toISOString(),
+        ]
+      );
 
-      // 通过Socket.IO发送实时通知
+      // 通过 Socket.IO 实时推送
       socketManager.emitToUser(userId, 'calendar_reminder', {
         id: notificationId,
         title: '日历提醒',
         message,
-        event_title: reminder.event_title,
-        event_id: reminder.event_id,
-        timestamp: new Date().toISOString()
+        event_title: event.title,
+        event_id: event.id,
+        minutes,
+        timestamp: new Date().toISOString(),
       });
     }
-  }
 
-  /**
-   * 发送邮件提醒
-   */
-  private static async sendEmailReminder(reminder: IReminder & { 
-    event_title: string;
-  }, message: string): Promise<void> {
-    // TODO: 实现邮件发送逻辑
-    logger.info('邮件提醒功能待实现', {
-      reminderId: reminder.id,
-      message
-    });
-  }
-
-  /**
-   * 发送短信提醒
-   */
-  private static async sendSmsReminder(reminder: IReminder & { 
-    event_title: string;
-  }, message: string): Promise<void> {
-    // TODO: 实现短信发送逻辑
-    logger.info('短信提醒功能待实现', {
-      reminderId: reminder.id,
-      message
+    logger.info('已发送日历提醒', {
+      eventId: event.id,
+      minutes,
+      recipients: recipients.length,
     });
   }
 
@@ -199,12 +168,11 @@ export class CalendarReminderService {
    * 获取事件参与者
    */
   private static async getEventParticipants(eventId: string): Promise<string[]> {
-    const participants = await dbAll<{ user_id: string }>(`
-      SELECT user_id FROM calendar_event_participants 
-      WHERE event_id = ?
-    `, [eventId]);
-
-    return participants.map(p => p.user_id);
+    const participants = await dbAll<{ user_id: string }>(
+      `SELECT user_id FROM event_participants WHERE event_id = ?`,
+      [eventId]
+    );
+    return participants.map((p) => p.user_id);
   }
 
   /**
@@ -215,104 +183,39 @@ export class CalendarReminderService {
   }
 
   /**
-   * 为特定事件创建提醒
+   * 统计（基于 notifications 表）
    */
-  static async createEventReminder(
-    eventId: string, 
-    reminderType: 'notification' | 'email' | 'sms',
-    remindBeforeMinutes: number,
-    message?: string,
-    recipientId?: string
-  ): Promise<string> {
-    const reminderId = require('uuid').v4();
-    const now = new Date().toISOString();
-
-    await dbRun(`
-      INSERT INTO calendar_reminders (
-        id, event_id, reminder_type, remind_before_minutes, 
-        message, recipient_id, created_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?)
-    `, [
-      reminderId, eventId, reminderType, remindBeforeMinutes,
-      message || null, recipientId || null, now
-    ]);
-
-    logger.info('事件提醒创建成功', {
-      reminderId,
-      eventId,
-      reminderType,
-      remindBeforeMinutes
-    });
-
-    return reminderId;
-  }
-
-  /**
-   * 批量创建默认提醒
-   */
-  static async createDefaultReminders(eventId: string): Promise<void> {
-    const defaultReminders = [
-      { type: 'notification', minutes: 15 },
-      { type: 'notification', minutes: 60 }
-    ];
-
-    for (const reminder of defaultReminders) {
-      await this.createEventReminder(
-        eventId,
-        reminder.type as 'notification',
-        reminder.minutes
-      );
-    }
-  }
-
-  /**
-   * 删除事件的所有提醒
-   */
-  static async deleteEventReminders(eventId: string): Promise<void> {
-    await dbRun(`
-      DELETE FROM calendar_reminders WHERE event_id = ?
-    `, [eventId]);
-
-    logger.info('事件提醒删除完成', { eventId });
-  }
-
-  /**
-   * 获取事件提醒统计
-   */
-  static async getReminderStats(familyId: string): Promise<{
+  static async getReminderStats(
+    familyId: string
+  ): Promise<{
     total_reminders: number;
     sent_reminders: number;
     pending_reminders: number;
     reminders_by_type: { [key: string]: number };
   }> {
-    const stats = await dbGet(`
-      SELECT 
-        COUNT(*) as total_reminders,
-        SUM(CASE WHEN is_sent = 1 THEN 1 ELSE 0 END) as sent_reminders,
-        SUM(CASE WHEN is_sent = 0 THEN 1 ELSE 0 END) as pending_reminders
-      FROM calendar_reminders r
-      JOIN calendar_events e ON r.event_id = e.id
-      WHERE e.family_id = ? AND e.is_active = 1
-    `, [familyId]);
+    const stats = await dbGet<{ total: number }>(
+      `SELECT COUNT(*) as total FROM notifications WHERE family_id = ? AND reference_type = 'calendar'`,
+      [familyId]
+    );
 
-    const remindersByType = await dbAll<{ reminder_type: string; count: number }>(`
-      SELECT 
-        r.reminder_type,
-        COUNT(*) as count
-      FROM calendar_reminders r
-      JOIN calendar_events e ON r.event_id = e.id
-      WHERE e.family_id = ? AND e.is_active = 1
-      GROUP BY r.reminder_type
-    `, [familyId]);
+    const byTypeRows = await dbAll<{ type: string; cnt: number }>(
+      `SELECT type as type, COUNT(*) as cnt
+       FROM notifications
+       WHERE family_id = ? AND reference_type = 'calendar'
+       GROUP BY type`,
+      [familyId]
+    );
+
+    const reminders_by_type = byTypeRows.reduce((acc: any, r) => {
+      acc[r.type] = r.cnt;
+      return acc;
+    }, {} as Record<string, number>);
 
     return {
-      total_reminders: stats?.total_reminders || 0,
-      sent_reminders: stats?.sent_reminders || 0,
-      pending_reminders: stats?.pending_reminders || 0,
-      reminders_by_type: remindersByType.reduce((acc: any, item) => {
-        acc[item.reminder_type] = item.count;
-        return acc;
-      }, {})
+      total_reminders: stats?.total || 0,
+      sent_reminders: stats?.total || 0,
+      pending_reminders: 0,
+      reminders_by_type,
     };
   }
 }

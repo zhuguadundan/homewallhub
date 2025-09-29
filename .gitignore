@@ -59,3 +59,6 @@ coverage/
 ehthumbs.db
 Desktop.ini
 
+# 本地规划文档（不追踪私有计划）
+家和智能助手-详细开发计划.md
+家和智能助手-开发待办清单.md

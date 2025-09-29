@@ -78,7 +78,7 @@ export class TaskController {
       assigned_to: { required: false, type: 'string' },
       page: { required: false, type: 'number', min: 1 },
       pageSize: { required: false, type: 'number', min: 1, max: 100 }
-    };
+    } as any;
     
     const validation = Validator.validate(ctx.query, querySchema);
     if (!validation.isValid) {
@@ -191,7 +191,7 @@ export class TaskController {
 
     const assignSchema = {
       assigneeId: { required: true, type: 'string' }
-    };
+    } as any;
 
     const validation = Validator.validate(ctx.request.body, assignSchema);
     if (!validation.isValid) {
@@ -276,7 +276,7 @@ export class TaskController {
     }
 
     const familyId = ctx.query.familyId as string;
-    const status = ctx.query.status as string;
+    const status = ctx.query.status as 'pending' | 'in_progress' | 'completed' | 'cancelled' | undefined;
 
     try {
       const result = await Task.getUserTasks(user.userId, familyId, { status });
@@ -322,9 +322,9 @@ export class TaskController {
     }
 
     const batchSchema = {
-      taskIds: { required: true, type: 'array', minItems: 1 },
+      taskIds: { required: true, type: 'array', custom: (value: any) => Array.isArray(value) && value.length > 0 || 'taskIds 不能为空' },
       status: { required: true, type: 'string', enum: ['pending', 'in_progress', 'completed', 'cancelled'] }
-    };
+    } as any;
 
     const validation = Validator.validate(ctx.request.body, batchSchema);
     if (!validation.isValid) {
@@ -363,7 +363,7 @@ export class TaskController {
     const statusSchema = {
       status: { required: true, type: 'string', enum: ['pending', 'in_progress', 'completed', 'cancelled'] },
       actual_minutes: { required: false, type: 'number', min: 0 }
-    };
+    } as any;
 
     const validation = Validator.validate(ctx.request.body, statusSchema);
     if (!validation.isValid) {

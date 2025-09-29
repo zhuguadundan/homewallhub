@@ -1,5 +1,11 @@
 {
-  "dependencies": {
-    "@playwright/test": "^1.55.1"
+  "private": true,
+  "scripts": {
+    "pw": "node node_modules/@playwright/test/cli.js",
+    "test:e2e": "node node_modules/@playwright/test/cli.js test -c playwright.config.ts --project=chromium-mobile",
+    "test:e2e:headed": "node node_modules/@playwright/test/cli.js test -c playwright.config.ts --project=chromium-mobile --headed"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.55.1"
   }
 }

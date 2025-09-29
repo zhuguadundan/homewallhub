@@ -27,7 +27,6 @@
               <van-tag
                 v-if="message.is_pinned"
                 color="#ff6b35"
-                size="mini"
                 style="margin-left: 8px"
               >
                 置顶
@@ -67,7 +66,6 @@
             v-for="userId in message.mentioned_users"
             :key="userId"
             color="#1989fa"
-            size="mini"
             style="margin-right: 4px"
           >
             @{{ getUserName(userId) }}

@@ -65,7 +65,7 @@ UPLOAD_DIR=./uploads
 cd frontend
 # 前端通常使用默认配置即可
 # 如需自定义API地址，可创建 .env.local
-echo "VITE_API_BASE_URL=http://localhost:8080/api" > .env.local
+echo "VITE_API_BASE_URL=http://localhost:8081/api" > .env.local
 ```
 
 ### 3. 启动服务
@@ -101,8 +101,8 @@ npm run start
 ### 4. 访问应用
 
 - **前端地址**: http://localhost:3000
-- **后端API**: http://localhost:8080
-- **API文档**: http://localhost:8080/health
+- **后端API**: http://localhost:8081
+- **API文档**: http://localhost:8081/health
 
 ## 🧪 功能测试指南
 
@@ -117,7 +117,7 @@ npm run start
 #### 方法2: 使用API直接测试
 ```bash
 # 注册用户
-curl -X POST http://localhost:8080/api/auth/register \
+curl -X POST http://localhost:8081/api/auth/register \
   -H "Content-Type: application/json" \
   -d '{
     "username": "testuser",
@@ -127,7 +127,7 @@ curl -X POST http://localhost:8080/api/auth/register \
   }'
 
 # 登录
-curl -X POST http://localhost:8080/api/auth/login \
+curl -X POST http://localhost:8081/api/auth/login \
   -H "Content-Type: application/json" \
   -d '{
     "email": "test@example.com",
@@ -139,7 +139,7 @@ curl -X POST http://localhost:8080/api/auth/login \
 
 ```bash
 # 创建家庭 (需要先获取token)
-curl -X POST http://localhost:8080/api/families \
+curl -X POST http://localhost:8081/api/families \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer YOUR_TOKEN" \
   -d '{
@@ -148,7 +148,7 @@ curl -X POST http://localhost:8080/api/families \
   }'
 
 # 获取家庭列表
-curl -X GET http://localhost:8080/api/families \
+curl -X GET http://localhost:8081/api/families \
   -H "Authorization: Bearer YOUR_TOKEN"
 ```
 
@@ -156,11 +156,11 @@ curl -X GET http://localhost:8080/api/families \
 
 ```bash
 # 获取食材分类
-curl -X GET http://localhost:8080/api/inventory/categories \
+curl -X GET http://localhost:8081/api/inventory/categories \
   -H "Authorization: Bearer YOUR_TOKEN"
 
 # 添加库存记录
-curl -X POST http://localhost:8080/api/families/FAMILY_ID/inventory \
+curl -X POST http://localhost:8081/api/families/FAMILY_ID/inventory \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer YOUR_TOKEN" \
   -d '{
@@ -177,7 +177,7 @@ curl -X POST http://localhost:8080/api/families/FAMILY_ID/inventory \
 
 ```bash
 # 创建任务
-curl -X POST http://localhost:8080/api/families/FAMILY_ID/tasks \
+curl -X POST http://localhost:8081/api/families/FAMILY_ID/tasks \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer YOUR_TOKEN" \
   -d '{
@@ -188,7 +188,7 @@ curl -X POST http://localhost:8080/api/families/FAMILY_ID/tasks \
   }'
 
 # 获取任务列表
-curl -X GET "http://localhost:8080/api/families/FAMILY_ID/tasks?page=1&pageSize=10" \
+curl -X GET "http://localhost:8081/api/families/FAMILY_ID/tasks?page=1&pageSize=10" \
   -H "Authorization: Bearer YOUR_TOKEN"
 ```
 
@@ -196,7 +196,7 @@ curl -X GET "http://localhost:8080/api/families/FAMILY_ID/tasks?page=1&pageSize=
 
 ```bash
 # 发布留言
-curl -X POST http://localhost:8080/api/families/FAMILY_ID/messages \
+curl -X POST http://localhost:8081/api/families/FAMILY_ID/messages \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer YOUR_TOKEN" \
   -d '{
@@ -206,7 +206,7 @@ curl -X POST http://localhost:8080/api/families/FAMILY_ID/messages \
   }'
 
 # 获取留言列表
-curl -X GET "http://localhost:8080/api/families/FAMILY_ID/messages?page=1&pageSize=10" \
+curl -X GET "http://localhost:8081/api/families/FAMILY_ID/messages?page=1&pageSize=10" \
   -H "Authorization: Bearer YOUR_TOKEN"
 ```
 
@@ -235,7 +235,7 @@ SELECT * FROM families;
 ```bash
 # 查看后端日志
 cd backend
-tail -f logs/app.log
+tail -f logs/combined.log
 
 # 查看错误日志
 tail -f logs/error.log
@@ -312,7 +312,7 @@ cd backend
 NODE_ENV=development npm run dev
 
 # 查看实时日志
-tail -f logs/app.log
+tail -f logs/combined.log
 ```
 
 ## 🚀 部署指南
@@ -344,7 +344,7 @@ npm run start
 docker build -t jiehe-smart-assistant .
 
 # 运行容器
-docker run -p 8080:8080 -v $(pwd)/data:/app/backend/database jiehe-smart-assistant
+docker run -p 8081:8081 -v $(pwd)/data:/app/backend/database jiehe-smart-assistant
 ```
 
 ## 📞 技术支持

@@ -261,7 +261,7 @@ export class Family {
       throw new AuthorizationError('您不是该家庭的成员');
     }
 
-    const members = await dbAll<IFamilyMember & { username: string; email: string; avatar?: string }>(
+    const members = await dbAll<IFamilyMember & { username: string; email: string; avatar?: string; user_nickname?: string }>(
       `SELECT fm.*, u.username, u.email, u.avatar, u.nickname as user_nickname
        FROM family_members fm
        JOIN users u ON fm.user_id = u.id
@@ -298,6 +298,21 @@ export class Family {
     );
     
     return member || null;
+  }
+
+  /**
+   * 获取用户的家庭列表（用于前端展示）
+   */
+  static async getUserFamilies(userId: string): Promise<any[]> {
+    return await dbAll(
+      `SELECT f.id, f.name, f.description, f.avatar, f.created_at,
+              fm.role, fm.joined_at, fm.nickname as member_nickname
+       FROM families f
+       JOIN family_members fm ON f.id = fm.family_id
+       WHERE fm.user_id = ? AND fm.is_active = 1 AND f.is_active = 1
+       ORDER BY fm.joined_at DESC`,
+      [userId]
+    );
   }
 
   /**

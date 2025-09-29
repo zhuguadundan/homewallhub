@@ -10,52 +10,57 @@
 
 ### 项目结构
 ```
-jiehe-smart-assistant/
-├── backend/          # 后端 Koa.js 应用
-├── frontend/         # 前端 Vue 3 应用
-├── database/         # 数据库Schema和迁移文件
-└── docs/             # 项目文档
+hometodo/
+├── jiehe-smart-assistant/    # 主应用目录
+│   ├── backend/             # 后端 Koa.js 应用
+│   ├── frontend/            # 前端 Vue 3 应用
+│   ├── database/            # 数据库Schema和迁移文件
+│   └── docs/                # 项目文档
+├── tests/                   # Playwright E2E测试
+├── playwright.config.ts     # Playwright配置
+└── package.json             # 根级别包管理(Playwright)
 ```
 
 ### 环境要求
-- Node.js: 16.x 或更高版本
+- Node.js: 18.x 或更高版本
 - NPM: 8.x 或更高版本
 - 数据库: SQLite (自动创建)
+- Playwright: 自动安装浏览器依赖
 
 ### 开发命令
 
 #### 项目启动
 ```bash
-# 开发模式 - 同时启动前后端
-npm run dev
+# 开发模式 - 同时启动前后端 (从jiehe-smart-assistant目录)
+cd jiehe-smart-assistant && npm run dev
 
 # 分别启动
-cd backend && npm run dev    # 后端开发服务器
-cd frontend && npm run dev   # 前端开发服务器
+cd jiehe-smart-assistant/backend && npm run dev    # 后端开发服务器 (端口8081)
+cd jiehe-smart-assistant/frontend && npm run dev   # 前端开发服务器 (端口3000)
 ```
 
 #### 构建和部署
 ```bash
 # 前端构建
-cd frontend && npm run build
+cd jiehe-smart-assistant/frontend && npm run build
 
 # 后端构建
-cd backend && npm run build
+cd jiehe-smart-assistant/backend && npm run build
 
 # 生产模式启动
-cd backend && npm run start
+cd jiehe-smart-assistant/backend && npm run start
 ```
 
 #### 代码质量
 ```bash
 # 后端
-cd backend
+cd jiehe-smart-assistant/backend
 npm run lint          # ESLint 检查
 npm run lint:fix      # 自动修复lint问题
 npm run format        # Prettier 格式化
 
 # 前端
-cd frontend
+cd jiehe-smart-assistant/frontend
 npm run lint          # ESLint 检查
 npm run format        # Prettier 格式化
 npm run type-check    # TypeScript 类型检查
@@ -64,15 +69,20 @@ npm run type-check    # TypeScript 类型检查
 #### 测试
 ```bash
 # 后端测试
-cd backend && npm test
+cd jiehe-smart-assistant/backend && npm test
 
 # 前端测试
-cd frontend && npm test
+cd jiehe-smart-assistant/frontend && npm test
+
+# E2E测试 (Playwright) - 从根目录运行
+npm run test:e2e              # 移动端视口E2E测试
+npm run test:e2e:headed       # 有头模式E2E测试
+npm run pw test               # 直接运行Playwright
 ```
 
 #### 数据库操作
 ```bash
-cd backend
+cd jiehe-smart-assistant/backend
 npm run migrate       # 运行数据库迁移
 npm run seed         # 插入种子数据
 
@@ -198,14 +208,14 @@ sqlite3 database/jiehe.db
 
 ### 日志查看
 ```bash
-cd backend
+cd jiehe-smart-assistant/backend
 tail -f logs/app.log      # 应用日志
 tail -f logs/error.log    # 错误日志
 ```
 
 ### 数据库重置
 ```bash
-cd backend
+cd jiehe-smart-assistant/backend
 rm -f database/jiehe.db   # 删除数据库文件
 npm run dev               # 重启自动创建新数据库
 ```
@@ -213,10 +223,10 @@ npm run dev               # 重启自动创建新数据库
 ## 🎨 前端组件指南
 
 ### 页面组件位置
-- 主要功能页面: `frontend/src/views/`
-- 通用组件: `frontend/src/components/`
-- API服务: `frontend/src/api/`
-- 状态管理: `frontend/src/stores/`
+- 主要功能页面: `jiehe-smart-assistant/frontend/src/views/`
+- 通用组件: `jiehe-smart-assistant/frontend/src/components/`
+- API服务: `jiehe-smart-assistant/frontend/src/api/`
+- 状态管理: `jiehe-smart-assistant/frontend/src/stores/`
 
 ### 移动端适配
 - 所有页面都要适配移动端
@@ -230,18 +240,21 @@ npm run dev               # 重启自动创建新数据库
 
 ## 📚 重要文件说明
 
-- `backend/src/app.ts` - 后端入口文件
-- `backend/database/schema.sql` - 完整数据库架构
-- `frontend/src/main.ts` - 前端入口文件
-- `frontend/vite.config.ts` - Vite配置和PWA设置
-- `.env.example` - 环境变量模板
+- `jiehe-smart-assistant/backend/src/app.ts` - 后端入口文件
+- `jiehe-smart-assistant/database/schema.sql` - 完整数据库架构
+- `jiehe-smart-assistant/frontend/src/main.ts` - 前端入口文件
+- `jiehe-smart-assistant/frontend/vite.config.ts` - Vite配置和PWA设置
+- `jiehe-smart-assistant/backend/.env.example` - 环境变量模板
+- `playwright.config.ts` - Playwright E2E测试配置
+- `tests/` - E2E测试文件目录
 
 ## 🔧 配置建议
 
 ### 开发环境配置
-1. 复制 `backend/.env.example` 到 `backend/.env`
+1. 复制 `jiehe-smart-assistant/backend/.env.example` 到 `jiehe-smart-assistant/backend/.env`
 2. 配置JWT密钥和通义千问API密钥
 3. 设置合适的端口和CORS配置
+4. 安装依赖: `cd jiehe-smart-assistant && npm run install:all`
 
 ### 生产环境注意事项
 - 使用强密码的JWT密钥

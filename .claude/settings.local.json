@@ -61,7 +61,17 @@
       "Bash(curl -X POST -H \"Content-Type: application/json\" -d '{\"\"identifier\"\":\"\"testuser\"\",\"\"password\"\":\"\"password123\"\"}' http://localhost:8081/api/auth/login)",
       "Bash(curl -X POST -H \"Content-Type: application/json\" -d '{\"\"username\"\":\"\"testuser\"\",\"\"email\"\":\"\"test@example.com\"\",\"\"password\"\":\"\"password123\"\"}' http://localhost:8081/api/auth/register)",
       "Bash(curl -X POST -H \"Content-Type: application/json\" -d '{\"\"identifier\"\":\"\"test@example.com\"\",\"\"password\"\":\"\"password123\"\"}' http://localhost:8081/api/auth/login)",
-      "mcp__playwright__playwright_evaluate"
+      "mcp__playwright__playwright_evaluate",
+      "Bash(npm run test:e2e:*)",
+      "Bash(npm run test:e2e:headed:*)",
+      "Bash(curl -s \"http://localhost:3000/src/main.ts\")",
+      "Bash(curl -s \"http://localhost:3000/src/router/index.ts\")",
+      "Bash(curl -s \"http://localhost:3000/src/stores/auth.ts\")",
+      "Bash(curl -s \"http://localhost:3000/src/App.vue\")",
+      "Bash(node:*)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" \"http://localhost:3000/ai/recipe-recommendation\")",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" \"http://localhost:3000/calendar\")",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:8081/api/auth/profile)"
     ],
     "deny": [],
     "ask": []

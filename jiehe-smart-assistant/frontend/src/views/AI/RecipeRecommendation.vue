@@ -284,8 +284,10 @@ import { ref, reactive, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { aiApi } from '@/api/ai'
 import { inventoryApi } from '@/api/inventory'
+import { useUserStore } from '@/stores/user'
 
 const router = useRouter()
+const userStore = useUserStore()
 
 // 数据状态
 const loading = ref(false)
@@ -340,7 +342,13 @@ const difficultyText = computed(() => {
 // 方法
 const loadInventoryItems = async () => {
   try {
-    const response = await inventoryApi.getItems({
+    const familyId = userStore.currentFamily?.id
+    if (!familyId) {
+      console.warn('当前用户没有选择家庭，跳过库存加载')
+      return
+    }
+
+    const response = await inventoryApi.getItems(familyId, {
       page: 1,
       limit: 20,
       hasStock: true

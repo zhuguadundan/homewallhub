@@ -54,16 +54,15 @@ jiehe-smart-assistant/
 - 安装依赖与启动
   - `npm install`
   - `npm run dev`
-- 健康检查：`http://localhost:8080/health`
+- 健康检查：`http://localhost:8081/health`
 
 2) 前端
 - 安装与启动（目录：`frontend`）
   - `npm install`
   - `npm run dev`
-- 代理已就绪：`/api` 与 `/socket.io` → `http://localhost:8080`
+- 代理已就绪：`/api` 与 `/socket.io` → `http://localhost:8081`
 
-提示：根目录暂无一键脚本（`install:all`/`dev`），如需可后续新增 root `package.json` 做并发编排。
+提示：项目根（本目录）已提供并发脚本：`npm run install:all` 与 `npm run dev`。另外，仓库顶层提供 Playwright 端到端测试脚本，可在仓库根执行 `npm run test:e2e` 运行移动端视口的 UI 冒烟用例。
 
 
 最后更新：由 Agent 基于代码与文档自动梳理（当前分支工作副本）。如发现偏差，请以实际代码为准并在此文件内迭代更正。
-

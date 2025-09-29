@@ -6,16 +6,18 @@
       
       <!-- 主内容区域 -->
       <div class="content-wrapper">
-      <router-view v-slot="{ Component }">
+      <router-view v-slot="{ Component, route }">
         <keep-alive>
           <component
             :is="Component"
-            v-if="$route.meta?.keepAlive"
+            v-if="route.meta?.keepAlive"
+            :key="route.fullPath"
           />
         </keep-alive>
         <component
           :is="Component"
-          v-if="!$route.meta?.keepAlive"
+          v-if="!route.meta?.keepAlive"
+          :key="route.fullPath"
         />
       </router-view>
     </div>
@@ -88,7 +90,7 @@ import { useRoute } from 'vue-router'
 import { useUserStore } from '@/stores/user'
 import { useTaskStore } from '@/stores/task'
 import { useCalendarStore } from '@/stores/calendar'
-import { useFamilyStore } from '@/stores/family'
+// 家庭邀请的徽章暂不实现，避免因不存在的 store 字段导致报错
 import OfflineIndicator from '@/components/OfflineIndicator.vue'
 import MobileOptimized from '@/components/MobileOptimized.vue'
 
@@ -96,21 +98,23 @@ const route = useRoute()
 const userStore = useUserStore()
 const taskStore = useTaskStore()
 const calendarStore = useCalendarStore()
-const familyStore = useFamilyStore()
 
 const activeTab = ref('home')
 
-// 徽章数量计算
-const familyBadge = computed(() => {
-  return familyStore.pendingInvitations > 0 ? familyStore.pendingInvitations : ''
-});
+// 徽章数量计算（使用现有 store 字段，避免调用不存在的方法）
+const familyBadge = computed(() => '')
 
 const taskBadge = computed(() => {
-  return taskStore.urgentTaskCount > 0 ? taskStore.urgentTaskCount : ''
+  // 使用逾期任务数量作为紧急任务数展示
+  try {
+    return (taskStore.overdueTasks?.length || 0) > 0 ? taskStore.overdueTasks.length : ''
+  } catch { return '' }
 })
 
 const calendarBadge = computed(() => {
-  return calendarStore.todayEventCount > 0 ? calendarStore.todayEventCount : ''
+  try {
+    return (calendarStore.todayEvents?.length || 0) > 0 ? calendarStore.todayEvents.length : ''
+  } catch { return '' }
 })
 
 // 更新活跃标签
@@ -128,17 +132,15 @@ const updateActiveTab = () => {
     activeTab.value = 'calendar'
   } else if (['Analytics', 'InventoryAnalysis'].includes(routeName)) {
     activeTab.value = 'analytics'
+  } else if (['Messages'].includes(routeName)) {
+    activeTab.value = 'messages'
   }
 }
 
 onMounted(() => {
   updateActiveTab()
-  // 初始化数据
-  if (userStore.isAuthenticated) {
-    taskStore.loadUrgentTasks()
-    calendarStore.loadTodayEvents()
-    familyStore.loadPendingInvitations()
-  }
+  // 初始化数据：避免调用不存在的方法，后续可在对应 store 中补齐实现
+  // 若需要动态刷新徽章，可在相应页面中加载后通过事件总线或 store 联动
 })
 
 // 监听路由变化

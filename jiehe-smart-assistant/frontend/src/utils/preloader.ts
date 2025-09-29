@@ -32,7 +32,7 @@ export class ComponentPreloader {
   preloadCriticalComponents() {
     // 主要功能组件
     this.addToQueue('Home', () => import('@/views/Home.vue'))
-    this.addToQueue('Family', () => import('@/views/Family/Index.vue'))
+    this.addToQueue('Family', () => import('@/views/family/Index.vue'))
     this.addToQueue('Tasks', () => import('@/views/Tasks/Index.vue'))
     this.addToQueue('Inventory', () => import('@/views/Inventory/Index.vue'))
   }
@@ -45,7 +45,7 @@ export class ComponentPreloader {
     this.addToQueue('Calendar', () => import('@/views/Calendar/Index.vue'))
     this.addToQueue('AI', () => import('@/views/AI/Index.vue'))
     this.addToQueue('Analytics', () => import('@/views/Analytics/Index.vue'))
-    this.addToQueue('Messages', () => import('@/views/Messages/Index.vue'))
+    this.addToQueue('Messages', () => import('@/views/Message/Index.vue'))
   }
 
   /**
@@ -54,9 +54,9 @@ export class ComponentPreloader {
   preloadByRoute(currentRoute: string) {
     const preloadMap: Record<string, ComponentLoader[]> = {
       '/family': [
-        () => import('@/views/Family/Create.vue'),
-        () => import('@/views/Family/Join.vue'),
-        () => import('@/views/Family/Settings.vue')
+        () => import('@/views/family/Create.vue'),
+        () => import('@/views/family/Join.vue'),
+        () => import('@/views/family/Settings.vue')
       ],
       '/tasks': [
         () => import('@/views/Tasks/Create.vue'),

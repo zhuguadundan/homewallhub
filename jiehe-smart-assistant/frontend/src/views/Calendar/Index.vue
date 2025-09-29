@@ -299,18 +299,16 @@
     </van-popup>
 
     <van-popup v-model:show="showStartTimePicker" position="bottom">
-      <van-datetime-picker
+      <van-date-picker
         v-model="selectedStartTime"
-        type="datetime"
         @confirm="onStartTimeConfirm"
         @cancel="showStartTimePicker = false"
       />
     </van-popup>
 
     <van-popup v-model:show="showEndTimePicker" position="bottom">
-      <van-datetime-picker
+      <van-date-picker
         v-model="selectedEndTime"
-        type="datetime"
         @confirm="onEndTimeConfirm"
         @cancel="showEndTimePicker = false"
       />
@@ -323,8 +321,10 @@ import { ref, reactive, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { showToast } from 'vant'
 import { calendarApi } from '@/api/calendar'
+import { useUserStore } from '@/stores/user'
 
 const router = useRouter()
+const userStore = useUserStore()
 
 // 响应式数据
 const activeTab = ref('month')
@@ -405,6 +405,8 @@ const statusOptions = [
 ]
 
 // 计算属性
+const familyId = computed(() => userStore.currentFamily?.id)
+
 const selectedDateEvents = computed(() => {
   const dateStr = formatDateKey(selectedDate.value)
   return calendarEvents.value[dateStr] || []
@@ -425,9 +427,11 @@ const formatToday = computed(() => {
 
 // 页面初始化
 onMounted(() => {
-  loadTodayEvents()
-  loadUpcomingEvents()
-  loadCalendarEvents()
+  if (familyId.value) {
+    loadTodayEvents()
+    loadUpcomingEvents()
+    loadCalendarEvents()
+  }
 })
 
 // 标签页切换

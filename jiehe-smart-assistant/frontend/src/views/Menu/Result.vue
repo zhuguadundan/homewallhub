@@ -160,7 +160,7 @@
 
       <!-- 推荐菜单 -->
       <div class="recommendation-card">
-        <h3>推荐菜单 (Top {{ Math.min(5, recommendedDishes.length) })</h3>
+        <h3>推荐菜单 (Top {{ Math.min(5, recommendedDishes.length) }})</h3>
         <div class="recommended-list">
           <div 
             v-for="dish in recommendedDishes.slice(0, 5)" 

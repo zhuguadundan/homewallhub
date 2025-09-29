@@ -132,9 +132,8 @@
 
     <!-- 时间选择器 -->
     <van-popup v-model:show="showTimePicker" position="bottom">
-      <van-datetime-picker
+      <van-date-picker
         v-model="selectedTime"
-        type="datetime"
         @confirm="onTimeConfirm"
         @cancel="showTimePicker = false"
       />

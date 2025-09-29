@@ -10,5 +10,20 @@ export const aiApi = {
   getBudgetUsage() {
     return http.get('/ai/budget/usage')
   },
+
+  // 获取菜谱推荐
+  getRecipeRecommendation(data: any) {
+    return http.post('/ai/recipe-recommendation', data)
+  },
+
+  // 获取任务建议
+  getTaskSuggestion(data: any) {
+    return http.post('/ai/task-suggestion', data)
+  },
+
+  // 生成智能购物清单
+  generateShoppingList(data: any) {
+    return http.post('/ai/shopping-list', data)
+  },
 }
 

@@ -186,9 +186,8 @@
 
     <!-- 时间选择器 -->
     <van-popup v-model:show="showTimePicker" position="bottom">
-      <van-datetime-picker
+      <van-date-picker
         v-model="reminderTime"
-        type="datetime"
         title="选择提醒时间"
         :min-date="new Date()"
         @confirm="onTimeConfirm"

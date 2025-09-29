@@ -50,7 +50,7 @@
         >
           <div class="message-header">
             <div class="user-info">
-              <van-avatar size="32" :src="getUserAvatar(message.user_id)" />
+              <van-image width="32" height="32" :src="getUserAvatar(message.user_id)" round fit="cover" />
               <div class="user-details">
                 <span class="username">{{ getUserName(message.user_id) }}</span>
                 <span class="timestamp">{{ formatTime(message.created_at) }}</span>
@@ -123,7 +123,7 @@
             >
               <div class="message-header">
                 <div class="user-info">
-                  <van-avatar size="32" :src="getUserAvatar(message.user_id)" />
+                  <van-image width="32" height="32" :src="getUserAvatar(message.user_id)" round fit="cover" />
                   <div class="user-details">
                     <span class="username">{{ getUserName(message.user_id) }}</span>
                     <span class="timestamp">{{ formatTime(message.created_at) }}</span>
@@ -286,8 +286,10 @@ import { ref, reactive, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { showToast } from 'vant'
 import { messageApi } from '@/api/message'
+import { useUserStore } from '@/stores/user'
 
 const router = useRouter()
+const userStore = useUserStore()
 
 // 响应式数据
 const searchQuery = ref('')
@@ -304,6 +306,9 @@ const messageList = ref([])
 const pinnedMessages = ref([])
 const notifications = ref([])
 const unreadCount = ref(0)
+
+// 计算属性
+const familyId = computed(() => userStore.currentFamily?.id)
 
 const messageForm = reactive({
   title: '',
@@ -338,10 +343,12 @@ const priorityOptions = [
 
 // 页面初始化
 onMounted(() => {
-  loadPinnedMessages()
-  loadMessages()
-  loadNotifications()
-  loadUnreadCount()
+  if (familyId.value) {
+    loadPinnedMessages()
+    loadMessages()
+    loadNotifications()
+    loadUnreadCount()
+  }
 })
 
 // 加载置顶留言

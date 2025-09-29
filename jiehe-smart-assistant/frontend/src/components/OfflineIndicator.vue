@@ -23,7 +23,7 @@
     <!-- 离线数据统计浮窗 -->
     <van-floating-bubble
       v-if="showStats && offlineStats.pendingActions > 0"
-      :offset="{ x: 'calc(100vw - 80px)', y: '100px' }"
+      :offset="{ x: 300, y: 100 }"
       icon="info-o"
       @click="showStatsPopup = true"
     >
@@ -136,7 +136,7 @@ onMounted(() => {
   updateOfflineStats()
   
   // 定期更新统计信息
-  statsUpdateInterval = setInterval(updateOfflineStats, 5000)
+  statsUpdateInterval = window.setInterval(updateOfflineStats, 5000)
 })
 
 onUnmounted(() => {

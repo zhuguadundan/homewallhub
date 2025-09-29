@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { taskApi } from '@/api/task'
 import type { ITask, CreateTaskData, UpdateTaskData, TaskFilter } from '@/types/task'
+import { useUserStore } from '@/stores/user'
 
 export const useTaskStore = defineStore('task', () => {
   // 状态
@@ -67,7 +68,9 @@ export const useTaskStore = defineStore('task', () => {
   const getTasks = async (familyId?: string): Promise<ITask[]> => {
     try {
       loading.value = true
-      const response = await taskApi.getTasks({ familyId })
+      const userStore = useUserStore()
+      const fid = familyId || userStore.currentFamily?.id || ''
+      const response = await taskApi.getTasks(fid)
       tasks.value = response.data
       return response.data
     } catch (error) {

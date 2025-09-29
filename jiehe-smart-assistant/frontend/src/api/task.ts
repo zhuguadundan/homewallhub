@@ -38,7 +38,7 @@ export const taskApi = {
 
   // 分配任务
   assignTask(taskId: string, userId: string): Promise<ApiResponse<ITask>> {
-    return http.post(`/tasks/${taskId}/assign`, { userId })
+    return http.put(`/tasks/${taskId}/assign`, { userId })
   },
 
   // 更新任务状态

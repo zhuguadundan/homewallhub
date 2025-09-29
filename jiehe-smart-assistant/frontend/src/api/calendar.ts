@@ -1,4 +1,4 @@
-import { request } from './request'
+import { http } from '@/utils/request'
 
 export interface CalendarEvent {
   id?: string
@@ -48,83 +48,83 @@ export const calendarApi = {
    * 获取事件列表
    */
   getEventList(params?: EventListParams) {
-    return request.get('/api/calendar/events', { params })
+    return http.get('/calendar/events', { params })
   },
 
   /**
    * 获取事件详情
    */
   getEventDetail(eventId: string) {
-    return request.get(`/api/calendar/events/${eventId}`)
+    return http.get(`/calendar/events/${eventId}`)
   },
 
   /**
    * 创建事件
    */
   createEvent(data: CalendarEvent) {
-    return request.post('/api/calendar/events', data)
+    return http.post('/calendar/events', data)
   },
 
   /**
    * 更新事件
    */
   updateEvent(eventId: string, data: Partial<CalendarEvent>) {
-    return request.put(`/api/calendar/events/${eventId}`, data)
+    return http.put(`/calendar/events/${eventId}`, data)
   },
 
   /**
    * 删除事件
    */
   deleteEvent(eventId: string) {
-    return request.delete(`/api/calendar/events/${eventId}`)
+    return http.delete(`/calendar/events/${eventId}`)
   },
 
   /**
    * 更新参与状态
    */
   updateParticipationStatus(eventId: string, data: ParticipationData) {
-    return request.put(`/api/calendar/events/${eventId}/participation`, data)
+    return http.put(`/calendar/events/${eventId}/participation`, data)
   },
 
   /**
    * 获取日历统计
    */
   getCalendarStats() {
-    return request.get('/api/calendar/stats')
+    return http.get('/calendar/stats')
   },
 
   /**
    * 获取今日事件
    */
   getTodayEvents() {
-    return request.get('/api/calendar/today')
+    return http.get('/calendar/today')
   },
 
   /**
    * 获取即将到来的事件
    */
   getUpcomingEvents(params?: { days?: number }) {
-    return request.get('/api/calendar/upcoming', { params })
+    return http.get('/calendar/upcoming', { params })
   },
 
   /**
    * 创建事件提醒
    */
   createEventReminder(eventId: string, data: ReminderData) {
-    return request.post(`/api/calendar/events/${eventId}/reminders`, data)
+    return http.post(`/calendar/events/${eventId}/reminders`, data)
   },
 
   /**
    * 获取提醒统计
    */
   getReminderStats() {
-    return request.get('/api/calendar/reminders/stats')
+    return http.get('/calendar/reminders/stats')
   },
 
   /**
    * 手动触发提醒检查
    */
   triggerReminderCheck() {
-    return request.post('/api/calendar/reminders/trigger')
+    return http.post('/calendar/reminders/trigger')
   }
 }

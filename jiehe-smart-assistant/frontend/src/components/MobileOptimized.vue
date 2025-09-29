@@ -21,7 +21,7 @@
     
     <!-- 移动端快捷操作浮层 -->
     <van-floating-panel
-      v-if="showFloatingPanel && isSmallScreen"
+      v-if="showFloatingPanelLocal && isSmallScreen"
       v-model:height="panelHeight"
       :anchors="[100, Math.round(0.4 * viewportHeight), Math.round(0.7 * viewportHeight)]"
       :content-draggable="false"
@@ -29,7 +29,7 @@
       <div class="floating-panel-content">
         <div class="panel-header">
           <h4>快捷操作</h4>
-          <van-button size="mini" @click="showFloatingPanel = false">
+          <van-button size="mini" @click="showFloatingPanelLocal = false">
             <van-icon name="cross" />
           </van-button>
         </div>
@@ -100,6 +100,11 @@ const {
 // 响应式状态
 const panelHeight = ref(100)
 const showGestureHints = ref(false)
+const showFloatingPanelLocal = ref<boolean>(props.showFloatingPanel)
+
+watch(() => props.showFloatingPanel, (val) => {
+  showFloatingPanelLocal.value = val
+})
 
 // 计算属性
 const hasSafeArea = computed(() => 

@@ -9,7 +9,7 @@ if (process.env.NODE_ENV === 'development') {
 }
 
 // 数据库配置
-const DB_PATH = process.env.DATABASE_PATH || path.join(__dirname, '../../database/jiehe.db');
+const DB_PATH = process.env.DATABASE_PATH || path.join(__dirname, '../database/jiehe.db');
 const DB_DIR = path.dirname(DB_PATH);
 
 // 数据库连接实例
@@ -129,7 +129,7 @@ async function configureDatabase(): Promise<void> {
  */
 async function initializeSchema(): Promise<void> {
   try {
-    const schemaPath = path.join(__dirname, '../../database/schema.sql');
+    const schemaPath = path.join(__dirname, '../database/schema.sql');
     await executeSqlFile(schemaPath);
     logger.info('数据库架构初始化完成');
   } catch (error) {

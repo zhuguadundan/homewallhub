@@ -125,7 +125,18 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import { formatDate, getDefaultAvatar } from '@/utils/date'
+// import { formatDate, getDefaultAvatar } from '@/utils/date'
+
+// 临时工具函数
+const formatDate = (date: Date, format: string) => {
+  const mm = String(date.getMonth() + 1).padStart(2, '0')
+  const dd = String(date.getDate()).padStart(2, '0')
+  return `${mm}-${dd}`
+}
+
+const getDefaultAvatar = (name: string) => {
+  return `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=random`
+}
 import type { ITask } from '@/types/task'
 
 interface Props {

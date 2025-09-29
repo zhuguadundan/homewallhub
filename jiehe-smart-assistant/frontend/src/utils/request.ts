@@ -1,4 +1,4 @@
-import axios from 'axios';
+import axios, { type AxiosRequestConfig, type AxiosResponse } from 'axios';
 import { showToast, showLoadingToast, closeToast } from 'vant';
 import { useAuthStore } from '@/stores/auth';
 import router from '@/router';
@@ -16,8 +16,10 @@ const request = axios.create({
 });
 
 // 请求拦截器
+import type { InternalAxiosRequestConfig } from 'axios';
+
 request.interceptors.request.use(
-  async (config: AxiosRequestConfig) => {
+  async (config: InternalAxiosRequestConfig) => {
     const authStore = useAuthStore();
     
     // 添加认证头
