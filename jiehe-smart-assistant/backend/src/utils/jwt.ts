@@ -1,6 +1,10 @@
 import jwt from 'jsonwebtoken';
 import { AuthenticationError } from '../middlewares/errorHandler';
 import { logger } from './logger';
+import dotenv from 'dotenv';
+
+// 确保在模块初始化时加载环境变量，避免在导入阶段读取未初始化的 env
+dotenv.config();
 
 // JWT载荷接口
 export interface JwtPayload {
