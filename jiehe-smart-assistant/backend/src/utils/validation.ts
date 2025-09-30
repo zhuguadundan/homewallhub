@@ -4,14 +4,18 @@ import { ValidationError } from '../middlewares/errorHandler'
 // 验证规则接口
 export interface ValidationRule {
   required?: boolean
-  type?: 'string' | 'number' | 'boolean' | 'array' | 'object' | 'email' | 'uuid'
+  // 放宽类型定义，兼容各控制器中使用的字符串字面量与扩展类型
+  type?: 'string' | 'number' | 'boolean' | 'array' | 'object' | 'email' | 'uuid' | string
   minLength?: number
   maxLength?: number
   min?: number
   max?: number
-  pattern?: RegExp
+  // 放宽以兼容字符串正则表达式写法
+  pattern?: any
   enum?: any[]
   custom?: (value: any) => boolean | string
+  // 允许额外的校验元数据（如 items、minItems 等），避免编译报错
+  [key: string]: any
 }
 
 // 验证模式
@@ -113,7 +117,14 @@ export class Validator {
       errors,
       data: validatedData
     }
-  }  // 类型验证
+  }
+
+  // 实例方法包装，便于以实例形式使用（兼容现有控制器写法）
+  validate(data: any, schema: ValidationSchema): ValidationResult {
+    return Validator.validate(data, schema)
+  }
+
+  // 类型验证
   private static validateType(field: string, value: any, type: string): string | null {
     switch (type) {
       case 'string':

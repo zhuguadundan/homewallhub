@@ -241,7 +241,7 @@ npm run dev               # 重启自动创建新数据库
 ## 📚 重要文件说明
 
 - `jiehe-smart-assistant/backend/src/app.ts` - 后端入口文件
-- `jiehe-smart-assistant/database/schema.sql` - 完整数据库架构
+- `jiehe-smart-assistant/backend/src/database/schema.sql` - 完整数据库架构
 - `jiehe-smart-assistant/frontend/src/main.ts` - 前端入口文件
 - `jiehe-smart-assistant/frontend/vite.config.ts` - Vite配置和PWA设置
 - `jiehe-smart-assistant/backend/.env.example` - 环境变量模板

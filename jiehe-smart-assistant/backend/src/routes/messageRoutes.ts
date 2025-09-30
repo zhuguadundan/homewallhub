@@ -1,14 +1,11 @@
 import Router from 'koa-router';
 import { MessageController } from '../controllers/MessageController';
 import { authMiddleware } from '../middlewares/auth';
-import { errorHandler } from '../middlewares/errorHandler';
 
 const router = new Router({
   prefix: '/api/messages'
 });
 
-// 应用中间件
-router.use(errorHandler);
 router.use(authMiddleware);
 
 // 基础留言管理路由

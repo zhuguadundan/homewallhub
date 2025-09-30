@@ -1,9 +1,8 @@
 import Koa from 'koa';
-import cors from 'koa-cors';
+import cors from '@koa/cors';
 import helmet from 'koa-helmet';
 import bodyParser from 'koa-bodyparser';
 import koaLogger from 'koa-logger';
-import rateLimit from 'koa-ratelimit';
 import { createServer } from 'http';
 import { Server as SocketIOServer } from 'socket.io';
 import dotenv from 'dotenv';
@@ -12,9 +11,8 @@ import dotenv from 'dotenv';
 import { logger } from './utils/logger';
 import { errorHandler } from './middlewares/errorHandler';
 import { authMiddleware } from './middlewares/auth';
-import { validateMiddleware } from './middlewares/validate';
 import { initDatabase } from './config/database';
-import { socketManager } from './middleware/socket';
+import { socketManager } from './middlewares/socket';
 import { CalendarReminderService } from './services/calendarReminderService';
 
 // 导入路由
@@ -60,21 +58,7 @@ app.use(cors({
 app.use(koaLogger());
 app.use(bodyParser());
 
-// 限流中间件
-const rateLimitMap = new Map();
-app.use(rateLimit({
-  driver: 'memory',
-  db: rateLimitMap,
-  duration: 60000, // 1分钟
-  errorMessage: '请求过于频繁，请稍后再试',
-  id: (ctx: any) => ctx.ip,
-  headers: {
-    remaining: 'Rate-Limit-Remaining',
-    reset: 'Rate-Limit-Reset',
-    total: 'Rate-Limit-Total'
-  },
-  max: 100 // 每分钟100次请求
-}) as any);
+// 全局限流统一交由业务层（如 AI RateLimitService）处理，移除 koa-ratelimit 防止重复与混乱
 
 // 路由配置
 app.use(authRoutes.routes()).use(authRoutes.allowedMethods());

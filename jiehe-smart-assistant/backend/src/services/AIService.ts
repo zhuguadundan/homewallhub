@@ -15,9 +15,9 @@ import type {
   AIServiceError,
   QianwenRequest,
   QianwenResponse,
-  QianwenMessage,
-  AIRequestType
+  QianwenMessage
 } from '../interfaces/ai';
+import { AIRequestType } from '../interfaces/ai';
 
 export class AIService {
   private static instance: AIService;
@@ -355,7 +355,7 @@ export class AIService {
     type: AIServiceError['type'],
     retryable: boolean
   ): AIServiceError {
-    const error = new Error(message) as AIServiceError;
+    const error = new Error(message) as unknown as AIServiceError;
     error.code = code;
     error.type = type;
     error.retryable = retryable;

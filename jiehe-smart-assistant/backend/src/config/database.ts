@@ -61,6 +61,8 @@ export async function initDatabase(): Promise<sqlite3.Database> {
       ensureDatabaseDirectory();
 
       db = new sqlite3.Database(DB_PATH, (error) => {
+        // 设置全局 busyTimeout，避免并发写入出现 SQLITE_BUSY
+        try { (db as any).configure?.('busyTimeout', 5000); } catch {}
         if (error) {
           logger.error('数据库连接失败:', error);
           reject(error);
@@ -124,13 +126,59 @@ async function configureDatabase(): Promise<void> {
       });
     });
   });
-}/**
+}
+
+/**
+ * 确认列是否存在，不存在则添加
+ */
+async function ensureColumnExists(table: string, column: string, definition: string): Promise<void> {
+  return new Promise((resolve, reject) => {
+    if (!db) return reject(new Error('数据库连接未初始化'));
+
+    db.all(`PRAGMA table_info(${table});`, [], (err, rows: any[]) => {
+      if (err) return reject(err);
+      const exists = rows?.some((r: any) => r.name === column);
+      if (exists) return resolve();
+
+      db.run(`ALTER TABLE ${table} ADD COLUMN ${column} ${definition};`, [], (alterErr) => {
+        if (alterErr) {
+          logger.error(`为表 ${table} 添加列 ${column} 失败:`, alterErr);
+          return reject(alterErr);
+        }
+        logger.info(`已为表 ${table} 添加列: ${column}`);
+        resolve();
+      });
+    });
+  });
+}
+
+/**
  * 初始化数据库架构
  */
+function resolveSchemaPath(): string {
+  const envPath = process.env.DATABASE_SCHEMA_PATH;
+  const candidates = [
+    envPath,
+    path.resolve(process.cwd(), 'database/schema.sql'),
+    path.resolve(process.cwd(), 'src/database/schema.sql'),
+    path.resolve(__dirname, '../database/schema.sql'),
+    path.resolve(__dirname, '../../database/schema.sql'),
+  ].filter(Boolean) as string[];
+
+  for (const p of candidates) {
+    if (fs.existsSync(p)) return p;
+  }
+  throw new Error(`未找到数据库schema.sql，请设置 DATABASE_SCHEMA_PATH 或将文件放在 src/database/schema.sql`);
+}
+
 async function initializeSchema(): Promise<void> {
   try {
-    const schemaPath = path.join(__dirname, '../database/schema.sql');
+    const schemaPath = resolveSchemaPath();
     await executeSqlFile(schemaPath);
+
+    // 运行时增量升级：为已有库补充新列
+    await ensureColumnExists('food_items', 'min_stock_threshold', 'INTEGER DEFAULT 0');
+
     logger.info('数据库架构初始化完成');
   } catch (error) {
     logger.error('数据库架构初始化失败:', error);

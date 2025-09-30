@@ -4,6 +4,7 @@
  */
 
 import dotenv from 'dotenv';
+import { logger } from '../utils/logger';
 dotenv.config();
 
 export interface AIConfig {
@@ -43,7 +44,8 @@ export interface AIConfig {
 export const aiConfig: AIConfig = {
   qianwen: {
     apiKey: process.env.QIANWEN_API_KEY || '',
-    baseUrl: process.env.QIANWEN_BASE_URL || 'https://dashscope.aliyuncs.com/api/v1',
+    // 兼容旧变量 QIANWEN_API_URL，但统一推荐 QIANWEN_BASE_URL
+    baseUrl: process.env.QIANWEN_BASE_URL || process.env.QIANWEN_API_URL || 'https://dashscope.aliyuncs.com/api/v1',
     model: process.env.QIANWEN_MODEL || 'qwen-plus',
     maxTokens: parseInt(process.env.QIANWEN_MAX_TOKENS || '2000'),
     temperature: parseFloat(process.env.QIANWEN_TEMPERATURE || '0.7'),
@@ -73,17 +75,17 @@ export const aiConfig: AIConfig = {
 // 验证配置
 export function validateAIConfig(): boolean {
   if (!aiConfig.qianwen.apiKey) {
-    console.warn('AI配置警告: 未设置通义千问API密钥');
+    logger.warn('AI配置警告: 未设置通义千问API密钥');
     return false;
   }
   
   if (aiConfig.budget.dailyLimit <= 0) {
-    console.warn('AI配置警告: 每日预算限制必须大于0');
+    logger.warn('AI配置警告: 每日预算限制必须大于0');
     return false;
   }
   
   if (aiConfig.budget.monthlyLimit <= 0) {
-    console.warn('AI配置警告: 每月预算限制必须大于0');
+    logger.warn('AI配置警告: 每月预算限制必须大于0');
     return false;
   }
   

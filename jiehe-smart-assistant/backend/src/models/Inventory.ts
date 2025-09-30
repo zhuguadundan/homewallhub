@@ -11,6 +11,7 @@ export interface IFoodItem {
   barcode?: string;
   unit: string; // kg, g, L, ml, 个, 包, 盒, 瓶等
   default_expire_days: number;
+  min_stock_threshold?: number;
   nutrition_info?: string; // JSON格式营养信息
   image?: string;
   description?: string;
@@ -56,6 +57,7 @@ export interface CreateFoodItemData {
   barcode?: string;
   unit: string;
   default_expire_days?: number;
+  min_stock_threshold?: number;
   nutrition_info?: string;
   image?: string;
   description?: string;
@@ -95,8 +97,333 @@ export interface InventoryStatistics {
   total_value?: number;
 }
 
+// 兼容控制器引用的类型（占位）
+export type CreateInventoryItemData = any;
+export type UpdateInventoryItemData = any;
+export type CreateInventoryBatchData = any;
+
 // 库存管理类
 export class Inventory {
+  /**
+   * 获取库存不足的物品（简化：阈值未建模，先返回空列表）
+   */
+  static async getLowStockItems(familyId: string): Promise<any[]> {
+    const rows = await dbAll<any>(
+      `SELECT 
+         fi.id as item_id, fi.name, fi.unit, fi.min_stock_threshold,
+         SUM(CASE WHEN i.status='available' THEN i.quantity ELSE 0 END) as current_stock
+       FROM food_items fi
+       LEFT JOIN inventory i ON i.food_item_id = fi.id AND i.family_id = ?
+       WHERE fi.is_active = 1
+       GROUP BY fi.id
+       HAVING fi.min_stock_threshold IS NOT NULL 
+          AND fi.min_stock_threshold > 0 
+          AND (SUM(CASE WHEN i.status='available' THEN i.quantity ELSE 0 END) <= fi.min_stock_threshold)
+       ORDER BY current_stock ASC, fi.name ASC`,
+      [familyId]
+    );
+
+    return rows.map(r => ({
+      id: r.item_id,
+      name: r.name,
+      unit: r.unit,
+      current_stock: Number(r.current_stock || 0),
+      min_stock_threshold: Number(r.min_stock_threshold || 0)
+    }));
+  }
+
+  /**
+   * 创建物品：映射为创建 food_item 记录
+   */
+  static async createItem(itemData: any, familyId: string, userId: string): Promise<any> {
+    const created = await this.createFoodItem({
+      name: itemData.name,
+      category_id: itemData.category_id,
+      barcode: itemData.barcode,
+      unit: itemData.unit,
+      description: itemData.notes || itemData.brand || undefined
+    }, userId);
+
+    return {
+      id: created.id,
+      family_id: familyId,
+      name: created.name,
+      category_id: created.category_id,
+      unit: created.unit,
+      current_stock: 0,
+      min_stock_threshold: itemData.min_stock_threshold || 0,
+      location: itemData.location || null,
+      created_at: created.created_at
+    };
+  }
+
+  /**
+   * 获取家庭物品列表（按 food_item 聚合）
+   */
+  static async getFamilyItems(
+    familyId: string,
+    userId: string,
+    queryParams: any
+  ): Promise<{ items: any[]; pagination: { page: number; pageSize: number; total: number } }> {
+    const {
+      category_id,
+      location,
+      status,
+      search,
+      sort_by = 'created_at',
+      sort_order = 'DESC',
+      page = 1,
+      pageSize = 20
+    } = queryParams || {};
+
+    const params: any[] = [familyId];
+    let where = 'WHERE fi.is_active = 1';
+
+    if (category_id) {
+      where += ' AND fi.category_id = ?';
+      params.push(category_id);
+    }
+
+    let having = '';
+    if (status) {
+      // 按状态筛选：存在对应状态批次
+      having = ` HAVING SUM(CASE WHEN i.status = ? THEN 1 ELSE 0 END) > 0`;
+      params.push(status);
+    }
+
+    // 搜索
+    if (search) {
+      where += ' AND (fi.name LIKE ? OR fi.description LIKE ?)';
+      params.push(`%${search}%`, `%${search}%`);
+    }
+
+    // 统计总数（以 food_item 维度）
+    const countRows = await dbAll<any>(
+      `SELECT fi.id
+       FROM food_items fi
+       LEFT JOIN inventory i ON i.food_item_id = fi.id AND i.family_id = ?
+       ${where}
+       GROUP BY fi.id${having}`,
+      params
+    );
+    const total = countRows.length;
+
+    const offset = (page - 1) * pageSize;
+    const sortExpr = (() => {
+      if (sort_by === 'name') return 'fi.name';
+      if (sort_by === 'expire_date') return 'MIN(i.expire_date)';
+      if (sort_by === 'quantity') return "SUM(CASE WHEN i.status='available' THEN i.quantity ELSE 0 END)";
+      return 'COALESCE(MIN(i.created_at), fi.created_at)';
+    })();
+
+    const rows = await dbAll<any>(
+      `SELECT 
+         fi.id as item_id, fi.name, fi.category_id, fi.unit, fi.description, fi.min_stock_threshold,
+         SUM(CASE WHEN i.status='available' THEN i.quantity ELSE 0 END) as current_stock,
+         MIN(i.expire_date) as nearest_expire_date,
+         COUNT(i.id) as batch_count
+       FROM food_items fi
+       LEFT JOIN inventory i ON i.food_item_id = fi.id AND i.family_id = ?
+       ${where}
+       GROUP BY fi.id
+       ${having}
+       ORDER BY ${sortExpr} ${sort_order === 'ASC' ? 'ASC' : 'DESC'}
+       LIMIT ? OFFSET ?`,
+      [...params, pageSize, offset]
+    );
+
+    const items = rows.map(r => ({
+      id: r.item_id,
+      name: r.name,
+      category_id: r.category_id,
+      unit: r.unit,
+      current_stock: Number(r.current_stock || 0),
+      min_stock_threshold: Number(r.min_stock_threshold || 0),
+      nearest_expire_date: r.nearest_expire_date,
+      batch_count: r.batch_count
+    }));
+
+    return { items, pagination: { page, pageSize, total } };
+  }
+
+  /**
+   * 按ID查找物品（含聚合库存）
+   */
+  static async findItemById(id: string): Promise<any | null> {
+    const item = await dbGet<any>('SELECT * FROM food_items WHERE id = ? AND is_active = 1', [id]);
+    if (!item) return null;
+
+    const agg = await dbGet<any>(
+      `SELECT 
+         SUM(CASE WHEN status='available' THEN quantity ELSE 0 END) as current_stock,
+         MIN(expire_date) as nearest_expire_date
+       FROM inventory WHERE food_item_id = ?`,
+      [id]
+    );
+
+    return {
+      id: item.id,
+      name: item.name,
+      category_id: item.category_id,
+      unit: item.unit,
+      description: item.description,
+      min_stock_threshold: Number(item.min_stock_threshold || 0),
+      current_stock: Number(agg?.current_stock || 0),
+      nearest_expire_date: agg?.nearest_expire_date || null,
+      created_at: item.created_at,
+      updated_at: item.updated_at
+    };
+  }
+
+  /**
+   * 获取物品批次（限制家庭）
+   */
+  static async getItemBatchesByFamily(itemId: string, familyId: string): Promise<any[]> {
+    return await dbAll<any>(
+      `SELECT * FROM inventory 
+       WHERE food_item_id = ? AND family_id = ?
+       ORDER BY 
+         CASE WHEN expire_date IS NULL THEN 1 ELSE 0 END,
+         expire_date ASC, created_at ASC`,
+      [itemId, familyId]
+    );
+  }
+
+  /**
+   * 更新物品（更新 food_items）
+   */
+  static async updateItem(itemId: string, updateData: any, userId: string): Promise<any> {
+    const fields: string[] = [];
+    const values: any[] = [];
+
+    const allowed = ['name', 'category_id', 'barcode', 'unit', 'description', 'image', 'min_stock_threshold'];
+    for (const k of allowed) {
+      if (updateData[k] !== undefined) {
+        fields.push(`${k} = ?`);
+        values.push(updateData[k]);
+      }
+    }
+
+    if (fields.length === 0) {
+      return await this.findItemById(itemId);
+    }
+
+    fields.push('updated_at = ?');
+    values.push(new Date().toISOString());
+    values.push(itemId);
+
+    await dbRun(`UPDATE food_items SET ${fields.join(', ')} WHERE id = ?`, values);
+    return await this.findItemById(itemId);
+  }
+
+  /**
+   * 创建批次（映射为 inventory 记录）
+   */
+  static async createBatch(batchData: any, userId: string): Promise<any> {
+    const now = new Date().toISOString();
+    const id = uuidv4().replace(/-/g, '');
+
+    await dbRun(
+      `INSERT INTO inventory (
+        id, family_id, food_item_id, batch_number, quantity, unit, purchase_date, expire_date,
+        purchase_price, location, status, notes, added_by, created_at, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'available', ?, ?, ?, ?)`,
+      [
+        id,
+        batchData.family_id,
+        batchData.item_id,
+        batchData.batch_number || null,
+        batchData.quantity,
+        batchData.unit,
+        batchData.purchase_date,
+        batchData.expiry_date || null,
+        batchData.unit_price || null,
+        batchData.location || '仓库',
+        batchData.notes || null,
+        userId,
+        now,
+        now
+      ]
+    );
+
+    return await this.findInventoryById(id);
+  }
+
+  /**
+   * 消耗物品（按家庭 + 食材分配，支持部分消耗）
+   */
+  static async consumeItemInFamily(itemId: string, familyId: string, quantity: number, userId: string, reason?: string): Promise<void> {
+    if (quantity <= 0) return;
+
+    // 按过期时间优先
+    const batches = await dbAll<any>(
+      `SELECT * FROM inventory 
+       WHERE family_id = ? AND food_item_id = ? AND status = 'available' AND quantity > 0
+       ORDER BY 
+         CASE WHEN expire_date IS NULL THEN 1 ELSE 0 END,
+         expire_date ASC, created_at ASC`,
+      [familyId, itemId]
+    );
+
+    let remain = quantity;
+    const now = new Date().toISOString();
+
+    for (const b of batches) {
+      if (remain <= 0) break;
+      const take = Math.min(Number(b.quantity), remain);
+
+      if (take <= 0) continue;
+
+      // 1) 为消耗部分插入一条 consumed 记录（保留原批次追踪）
+      const consumedId = uuidv4().replace(/-/g, '');
+      await dbRun(
+        `INSERT INTO inventory (id, family_id, food_item_id, batch_number, quantity, unit, purchase_date, expire_date, purchase_price,
+          location, status, notes, added_by, created_at, updated_at, consumed_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'consumed', ?, ?, ?, ?, ?)`,
+        [
+          consumedId,
+          b.family_id,
+          b.food_item_id,
+          b.batch_number,
+          take,
+          b.unit,
+          b.purchase_date,
+          b.expire_date,
+          b.purchase_price,
+          b.location,
+          reason || null,
+          userId,
+          now,
+          now,
+          now
+        ]
+      );
+
+      // 2) 更新原批次剩余数量/状态
+      const left = Number(b.quantity) - take;
+      if (left <= 0) {
+        await dbRun(
+          `UPDATE inventory SET quantity = 0, status = 'consumed', consumed_at = ?, updated_at = ? WHERE id = ?`,
+          [now, now, b.id]
+        );
+      } else {
+        await dbRun(
+          `UPDATE inventory SET quantity = ?, updated_at = ? WHERE id = ?`,
+          [left, now, b.id]
+        );
+      }
+
+      remain -= take;
+    }
+  }
+
+  /**
+   * 软删除物品（禁用 food_item）
+   */
+  static async softDeleteItem(itemId: string, userId: string): Promise<void> {
+    await dbRun('UPDATE food_items SET is_active = 0, updated_at = ? WHERE id = ?', [new Date().toISOString(), itemId]);
+  }
+
   /**
    * 创建食材基础信息
    */
@@ -106,8 +433,8 @@ export class Inventory {
 
     await dbRun(
       `INSERT INTO food_items (id, name, category_id, barcode, unit, 
-       default_expire_days, nutrition_info, image, description, created_at, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+       default_expire_days, min_stock_threshold, nutrition_info, image, description, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         itemId,
         itemData.name,
@@ -115,6 +442,7 @@ export class Inventory {
         itemData.barcode || null,
         itemData.unit,
         itemData.default_expire_days || 7,
+        itemData.min_stock_threshold || 0,
         itemData.nutrition_info || null,
         itemData.image || null,
         itemData.description || null,

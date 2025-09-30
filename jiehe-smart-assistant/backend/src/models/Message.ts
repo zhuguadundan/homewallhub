@@ -360,6 +360,39 @@ export class Message {
   }
 
   /**
+   * 添加留言反应（简化版：若表不存在则自动创建）
+   */
+  static async addReaction(messageId: string, userId: string, reactionType: 'like' | 'love' | 'laugh' | 'angry' | 'sad' | 'wow'): Promise<void> {
+    // 确保表存在（轻量自愈）
+    await dbRun(`CREATE TABLE IF NOT EXISTS message_reactions (
+      id TEXT PRIMARY KEY,
+      message_id TEXT NOT NULL,
+      user_id TEXT NOT NULL,
+      reaction_type TEXT NOT NULL,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      UNIQUE(message_id, user_id)
+    )`);
+
+    const existing = await dbGet<{ id: string }>(
+      'SELECT id FROM message_reactions WHERE message_id = ? AND user_id = ?',
+      [messageId, userId]
+    );
+
+    if (existing) {
+      await dbRun(
+        'UPDATE message_reactions SET reaction_type = ?, created_at = ? WHERE id = ?',
+        [reactionType, new Date().toISOString(), existing.id]
+      );
+    } else {
+      const id = uuidv4().replace(/-/g, '');
+      await dbRun(
+        'INSERT INTO message_reactions (id, message_id, user_id, reaction_type, created_at) VALUES (?, ?, ?, ?, ?)',
+        [id, messageId, userId, reactionType, new Date().toISOString()]
+      );
+    }
+  }
+
+  /**
    * 获取留言统计
    */
   static async getMessageStats(familyId: string, userId: string): Promise<MessageStatistics> {

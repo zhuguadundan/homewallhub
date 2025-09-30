@@ -31,6 +31,26 @@ build/
 coverage/
 .nyc_output/
 
+# Playwright 报告与临时产物
+playwright-report/
+**/playwright-report/
+
+# Vite PWA dev-dist 产物
+jiehe-smart-assistant/frontend/dev-dist/
+
+# TS 构建信息
+*.tsbuildinfo
+**/*.tsbuildinfo
+
+# 临时测试脚本与截图（仅限仓库根目录）
+/final-test-*.png
+/test-*.png
+/homepage-test.png
+/final-test.js
+/quick-test.js
+/complete-test.js
+/test-*.js
+
 # 环境变量（保留示例）
 .env
 .env.local

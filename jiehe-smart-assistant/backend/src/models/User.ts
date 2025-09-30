@@ -51,7 +51,7 @@ export class User {
   static async create(userData: CreateUserData): Promise<IUser> {
     // 检查用户名和邮箱是否已存在
     const existingUser = await dbGet(
-      'SELECT id FROM users WHERE username = ? OR email = ? AND is_deleted = 0',
+      'SELECT id FROM users WHERE (username = ? OR email = ?) AND is_deleted = 0',
       [userData.username, userData.email]
     );
 

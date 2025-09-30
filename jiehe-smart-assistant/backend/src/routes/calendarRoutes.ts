@@ -1,14 +1,11 @@
 import Router from 'koa-router';
 import { CalendarController } from '../controllers/CalendarController';
 import { authMiddleware } from '../middlewares/auth';
-import { errorHandler } from '../middlewares/errorHandler';
 
 const router = new Router({
   prefix: '/api/calendar'
 });
 
-// 应用中间件
-router.use(errorHandler);
 router.use(authMiddleware);
 
 // 基础事件管理路由

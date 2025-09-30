@@ -1,10 +1,42 @@
 import { dbAll, dbGet, dbRun } from '../config/database';
 import { logger } from '../utils/logger';
-import { socketManager } from '../middleware/socket';
+import { socketManager } from '../middlewares/socket';
 
 export class CalendarReminderService {
   private static checkInterval: NodeJS.Timeout | null = null;
   private static isRunning = false;
+
+  /**
+   * 创建事件提醒（写入事件的 reminder_times 字段）
+   */
+  static async createEventReminder(
+    eventId: string,
+    reminderType: 'notification' | 'email' | 'sms',
+    remindBeforeMinutes: number,
+    message?: string,
+    recipientId?: string
+  ): Promise<string> {
+    // 仅支持应用内通知，其他类型预留
+    const ev = await dbGet<{ reminder_times: string | null }>(
+      'SELECT reminder_times FROM calendar_events WHERE id = ? AND is_deleted = 0',
+      [eventId]
+    );
+    if (!ev) throw new Error('事件不存在');
+
+    let times: number[] = [];
+    if (ev.reminder_times) {
+      try {
+        const parsed = JSON.parse(ev.reminder_times);
+        if (Array.isArray(parsed)) times = parsed.map((n) => Number(n)).filter(n => !isNaN(n) && n >= 0);
+      } catch {}
+    }
+    if (!times.includes(remindBeforeMinutes)) times.push(remindBeforeMinutes);
+    
+    await dbRun('UPDATE calendar_events SET reminder_times = ? WHERE id = ?', [JSON.stringify(times), eventId]);
+
+    const reminderId = require('uuid').v4();
+    return reminderId;
+  }
 
   /**
    * 启动提醒检查服务

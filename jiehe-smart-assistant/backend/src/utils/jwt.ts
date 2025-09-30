@@ -1,5 +1,6 @@
 import jwt from 'jsonwebtoken';
 import { AuthenticationError } from '../middlewares/errorHandler';
+import { logger } from './logger';
 
 // JWT载荷接口
 export interface JwtPayload {
@@ -13,8 +14,29 @@ export interface JwtPayload {
 
 // JWT工具类
 export class JwtUtil {
-  private static readonly ACCESS_TOKEN_SECRET = process.env.JWT_ACCESS_SECRET || process.env.JWT_SECRET || 'your-secret-key';
-  private static readonly REFRESH_TOKEN_SECRET = process.env.JWT_REFRESH_SECRET || 'your-refresh-secret-key';
+  // 强制要求配置访问密钥（JWT_ACCESS_SECRET 或 JWT_SECRET 二选一）和刷新密钥（JWT_REFRESH_SECRET）
+  private static readonly ACCESS_TOKEN_SECRET: string = (() => {
+    const secret = process.env.JWT_ACCESS_SECRET || process.env.JWT_SECRET;
+    if (!secret) {
+      // 启动即失败，避免使用不安全默认值
+      throw new Error('缺少JWT访问令牌密钥: 请设置 JWT_ACCESS_SECRET 或 JWT_SECRET');
+    }
+    return secret;
+  })();
+
+  private static readonly REFRESH_TOKEN_SECRET: string = (() => {
+    // 向后兼容：若未设置 JWT_REFRESH_SECRET，则回退到 JWT_SECRET，并给出警告
+    const refresh = process.env.JWT_REFRESH_SECRET;
+    if (refresh && refresh.length > 0) return refresh;
+
+    const fallback = process.env.JWT_SECRET;
+    if (fallback && fallback.length > 0) {
+      logger.warn('未设置 JWT_REFRESH_SECRET，已回退使用 JWT_SECRET 作为刷新令牌密钥（不推荐）。请尽快设置独立的 JWT_REFRESH_SECRET。');
+      return fallback;
+    }
+    throw new Error('缺少JWT刷新令牌密钥: 请设置 JWT_REFRESH_SECRET（或临时设置 JWT_SECRET 作为回退）');
+  })();
+
   private static readonly ACCESS_TOKEN_EXPIRES = process.env.JWT_ACCESS_EXPIRES_IN || process.env.JWT_EXPIRES_IN || '24h';
   private static readonly REFRESH_TOKEN_EXPIRES = process.env.JWT_REFRESH_EXPIRES_IN || '7d';
 

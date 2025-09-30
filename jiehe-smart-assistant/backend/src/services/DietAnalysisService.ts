@@ -7,6 +7,7 @@ import { Database } from 'sqlite3'
 import { DatabaseManager } from '../config/database'
 import { AIService } from './AIService'
 import { logger } from '../utils/logger'
+import { AIRequestType } from '../interfaces/ai'
 
 export interface DietAnalysisRequest {
   familyId: string
@@ -655,10 +656,11 @@ export class DietAnalysisService {
     `
 
     const aiResponse = await this.aiService.makeRequest({
-      type: 'diet_analysis',
-      content: prompt,
+      prompt,
+      context: undefined,
       familyId: analysisData.familyId,
-      userId: analysisData.familyId
+      userId: analysisData.familyId,
+      requestType: AIRequestType.GENERAL_ASSISTANT
     })
 
     return aiResponse.content

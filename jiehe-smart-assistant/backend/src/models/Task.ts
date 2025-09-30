@@ -236,7 +236,7 @@ export class Task {
 
     // 构建查询条件
     let whereClause = 'WHERE t.family_id = ? AND t.is_deleted = 0';
-    const whereValues = [familyId];
+    const whereValues: any[] = [familyId];
 
     if (status) {
       whereClause += ' AND t.status = ?';
@@ -580,7 +580,18 @@ export class Task {
       whereValues.push(params.status);
     }
 
-    // 获取任务列表
+    // 排序与分页白名单处理
+    const sortFieldMap: Record<string, string> = {
+      created_at: 'created_at',
+      due_date: 'due_date',
+      priority: 'priority',
+      updated_at: 'updated_at',
+    };
+    const sortBy = (params.sortBy && sortFieldMap[params.sortBy]) ? sortFieldMap[params.sortBy] : 'created_at';
+    const sortOrder = (String(params.sortOrder).toUpperCase() === 'ASC') ? 'ASC' : 'DESC';
+    const limit = Math.min(Math.max(Number(params.pageSize) || 50, 1), 200);
+
+    // 获取任务列表（使用安全映射后的排序字段和方向，LIMIT 用参数占位）
     const tasksQuery = `
       SELECT t.*, f.name as family_name,
              u_creator.username as creator_username,
@@ -590,11 +601,11 @@ export class Task {
       LEFT JOIN users u_creator ON t.created_by = u_creator.id
       LEFT JOIN users u_assignee ON t.assigned_to = u_assignee.id
       ${whereClause}
-      ORDER BY t.${params.sortBy || 'created_at'} ${params.sortOrder || 'DESC'}
-      LIMIT ${params.pageSize || 50}
+      ORDER BY t.${sortBy} ${sortOrder}
+      LIMIT ?
     `;
 
-    const tasks = await dbAll<any>(tasksQuery, whereValues);
+    const tasks = await dbAll<any>(tasksQuery, [...whereValues, limit]);
 
     return {
       tasks: tasks.map(task => ({

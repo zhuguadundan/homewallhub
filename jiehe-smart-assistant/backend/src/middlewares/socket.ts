@@ -1,8 +1,8 @@
 import { Server as HttpServer } from 'http'
 import { Server as SocketIOServer, Socket } from 'socket.io'
-import jwt from 'jsonwebtoken'
 import { JwtUtil } from '../utils/jwt'
 import { Family } from '../models/Family'
+import { logger } from '../utils/logger'
 
 export interface AuthenticatedSocket extends Socket {
   userId: string
@@ -58,12 +58,13 @@ class SocketManager {
         next(new Error('认证失败'))
       }
     })
-  }  private setupEventHandlers() {
+  }
+  private setupEventHandlers() {
     if (!this.io) return
 
     this.io.on('connection', (socket: Socket) => {
       const authSocket = socket as AuthenticatedSocket
-      console.log(`用户 ${authSocket.username} (${authSocket.userId}) 已连接`)
+      logger.info('Socket 连接', { userId: authSocket.userId, username: authSocket.username })
 
       // 加入用户自己的房间
       socket.join(`user:${authSocket.userId}`)
@@ -83,14 +84,14 @@ class SocketManager {
       socket.on('join-family', (familyId: string) => {
         socket.join(`family:${familyId}`)
         this.addUserToFamilyRoom(familyId, authSocket.userId)
-        console.log(`用户 ${authSocket.username} 加入家庭房间: ${familyId}`)
+        logger.info('Socket 加入家庭', { userId: authSocket.userId, familyId })
       })
 
       // 处理离开家庭
       socket.on('leave-family', (familyId: string) => {
         socket.leave(`family:${familyId}`)
         this.removeUserFromFamilyRoom(familyId, authSocket.userId)
-        console.log(`用户 ${authSocket.username} 离开家庭房间: ${familyId}`)
+        logger.info('Socket 离开家庭', { userId: authSocket.userId, familyId })
       })
 
       // 处理断开连接
@@ -99,10 +100,11 @@ class SocketManager {
         authSocket.familyIds.forEach(familyId => {
           this.removeUserFromFamilyRoom(familyId, authSocket.userId)
         })
-        console.log(`用户 ${authSocket.username} 已断开连接`)
+        logger.info('Socket 断开', { userId: authSocket.userId })
       })
     })
-  }  // 用户连接管理
+  }
+  // 用户连接管理
   private addUserSocket(userId: string, socketId: string) {
     if (!this.userSockets.has(userId)) {
       this.userSockets.set(userId, new Set())
@@ -136,7 +138,8 @@ class SocketManager {
         this.familyRooms.delete(familyId)
       }
     }
-  }  // 消息发送方法
+  }
+  // 消息发送方法
   emitToUser(userId: string, event: string, data: any) {
     if (this.io) {
       this.io.to(`user:${userId}`).emit(event, data)

@@ -1,15 +1,13 @@
 import Router from 'koa-router';
 import { MenuController } from '../controllers/MenuController';
-import { authMiddleware } from '../middlewares/auth';
-import { errorHandler } from '../middlewares/errorHandler';
+import { authMiddleware, familyMemberMiddleware } from '../middlewares/auth';
 
 const router = new Router({
   prefix: '/api/families/:familyId/menus'
 });
 
-// 应用中间件
-router.use(errorHandler);
 router.use(authMiddleware);
+router.use(familyMemberMiddleware());
 
 // 菜单管理路由
 router.get('/', MenuController.getFamilyMenus);
@@ -20,7 +18,7 @@ router.delete('/:menuId', MenuController.deleteMenu);
 
 // 菜品管理路由
 router.post('/:menuId/dishes', MenuController.addDish);
-router.put('/dishes/:dishId', MenuController.updateDish);
+// router.put('/dishes/:dishId', MenuController.updateDish); // 已移除重复实现，保留主更新接口后续再启用
 router.delete('/dishes/:dishId', MenuController.removeDish);
 
 // 投票相关路由

@@ -60,6 +60,14 @@ FILE_UPLOAD_MAX_SIZE=10485760
 UPLOAD_DIR=./uploads
 ```
 
+提示：为避免开发环境与生产环境数据库文件路径不一致，建议总是显式设置后端的 `DATABASE_PATH`。若你之前在 `backend/src/database/` 目录下已经生成了旧数据库，可在 backend 目录执行：
+
+```bash
+npm run db:migrate-path
+```
+
+该脚本会将旧库复制到 `DATABASE_PATH`（默认 `backend/database/jiehe.db`）。
+
 #### 前端配置
 ```bash
 cd frontend

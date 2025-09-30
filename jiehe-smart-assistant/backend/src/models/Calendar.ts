@@ -151,7 +151,16 @@ export class Calendar {
       params.push(searchTerm, searchTerm, searchTerm);
     }
 
-    const orderClause = `ORDER BY ${sort_by} ${sort_order.toUpperCase()}`;
+    // 排序白名单映射，避免SQL注入
+    const sortFieldMap: Record<string, string> = {
+      start_time: 'start_time',
+      created_at: 'created_at',
+      priority: 'priority',
+      title: 'title',
+    };
+    const safeSortBy = sortFieldMap[sort_by as string] || 'start_time';
+    const safeSortOrder = (String(sort_order).toUpperCase() === 'DESC') ? 'DESC' : 'ASC';
+    const orderClause = `ORDER BY ${safeSortBy} ${safeSortOrder}`;
     const offset = (page - 1) * limit;
 
     // 获取总数

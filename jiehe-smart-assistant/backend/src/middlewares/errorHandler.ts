@@ -80,12 +80,33 @@ export const errorHandler = async (ctx: Context, next: Next): Promise<void> => {
       throw new NotFoundError('接口不存在');
     }
   } catch (error: any) {
-    // 记录错误日志
+    // 敏感信息脱敏
+    const mask = (val: any) => (val ? '[REDACTED]' : val);
+    const sanitizeHeaders = (headers: any) => {
+      const h = { ...(headers || {}) } as Record<string, any>;
+      const keys = Object.keys(h);
+      for (const k of keys) {
+        if (k.toLowerCase() === 'authorization') h[k] = mask(h[k]);
+        if (k.toLowerCase() === 'cookie') h[k] = mask(h[k]);
+      }
+      return h;
+    };
+    const sanitizeBody = (body: any) => {
+      if (!body || typeof body !== 'object') return body;
+      const sensitive = new Set(['password', 'oldPassword', 'newPassword', 'refreshToken', 'token']);
+      const clone: any = Array.isArray(body) ? [] : {};
+      for (const [k, v] of Object.entries(body)) {
+        clone[k] = sensitive.has(k) ? '[REDACTED]' : v;
+      }
+      return clone;
+    };
+
+    // 记录错误日志（已脱敏）
     const errorInfo = {
       method: ctx.method,
       url: ctx.url,
-      headers: ctx.headers,
-      body: ctx.request.body,
+      headers: sanitizeHeaders(ctx.headers),
+      body: sanitizeBody(ctx.request.body),
       query: ctx.query,
       ip: ctx.ip,
       userAgent: ctx.get('User-Agent'),

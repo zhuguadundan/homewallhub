@@ -1,6 +1,6 @@
 import Router from 'koa-router';
 import { InventoryController } from '../controllers/InventoryController';
-import { authMiddleware } from '../middlewares/auth';
+import { authMiddleware, familyMemberMiddleware } from '../middlewares/auth';
 
 const router = new Router({
   prefix: '/api/families/:familyId/inventory'
@@ -8,6 +8,7 @@ const router = new Router({
 
 // 所有库存路由都需要认证
 router.use(authMiddleware);
+router.use(familyMemberMiddleware());
 
 // 库存物品相关路由
 router.post('/', InventoryController.createItem);                    // 创建库存物品

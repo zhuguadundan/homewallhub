@@ -8,6 +8,7 @@ import { DatabaseManager } from '../config/database'
 import { AIService } from './AIService'
 import { CostAnalysisService } from './CostAnalysisService'
 import { logger } from '../utils/logger'
+import { AIRequestType } from '../interfaces/ai'
 
 export interface PurchasingRequest {
   familyId: string
@@ -774,10 +775,11 @@ export class SmartPurchasingService {
     `
 
     const aiResponse = await this.aiService.makeRequest({
-      type: 'purchasing_plan',
-      content: prompt,
+      prompt,
+      context: undefined,
       familyId: response.plan.familyId,
-      userId: response.plan.familyId
+      userId: response.plan.familyId,
+      requestType: AIRequestType.GENERAL_ASSISTANT
     })
 
     return aiResponse.content

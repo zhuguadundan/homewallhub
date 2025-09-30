@@ -1,6 +1,6 @@
 import { Inventory } from '../models/Inventory';
 import { Family } from '../models/Family';
-import { socketManager } from '../middleware/socket';
+import { socketManager } from '../middlewares/socket';
 import { logger } from '../utils/logger';
 
 // 库存通知服务

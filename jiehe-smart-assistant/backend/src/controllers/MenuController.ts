@@ -103,7 +103,9 @@ export class MenuController {
     try {
       const result = await Menu.getFamilyMenus(familyId, user.userId, queryParams);
       
-      ResponseUtil.paginated(ctx, result.menus, result.pagination, '获取菜单列表成功');
+      // 兼容分页键名
+      const pageInfo = { page: result.pagination.page, pageSize: result.pagination.page_size, total: result.pagination.total };
+      ResponseUtil.paginated(ctx, result.menus, pageInfo, '获取菜单列表成功');
     } catch (error) {
       logger.error('获取菜单列表失败', { familyId, userId: user.userId, error });
       throw error;
@@ -546,84 +548,6 @@ export class MenuController {
       ResponseUtil.success(ctx, preferences, '获取家庭偏好分析成功');
     } catch (error) {
       logger.error('获取家庭偏好分析失败', { familyId: user.familyId, userId: user.userId, error });
-      throw error;
-    }
-  }
-
-  /**
-   * 更新菜品
-   */
-  static async updateDish(ctx: any): Promise<void> {
-    const user = ctx.state.user;
-    const dishId = ctx.params.dishId;
-
-    if (!user) {
-      throw new AuthenticationError('未认证的用户');
-    }
-
-    // 验证输入
-    const validation = Validator.validate(ctx.request.body, {
-      name: { required: false, type: 'string', minLength: 1, maxLength: 100 },
-      description: { required: false, type: 'string', maxLength: 500 },
-      price: { required: false, type: 'number', min: 0 },
-      category: { required: false, type: 'string' },
-      tags: { required: false, type: 'array' },
-      isAvailable: { required: false, type: 'boolean' }
-    });
-
-    if (!validation.isValid) {
-      throw new ValidationError('输入数据无效', validation.errors);
-    }
-
-    try {
-      const dishData = validation.data;
-      const updatedDish = await Menu.updateDish(Number(dishId), dishData);
-      
-      ResponseUtil.success(ctx, updatedDish, '菜品更新成功');
-    } catch (error) {
-      logger.error('更新菜品失败', { dishId, userId: user.userId, error });
-      throw error;
-    }
-  }
-
-  /**
-   * 删除菜品
-   */
-  static async removeDish(ctx: any): Promise<void> {
-    const user = ctx.state.user;
-    const dishId = ctx.params.dishId;
-
-    if (!user) {
-      throw new AuthenticationError('未认证的用户');
-    }
-
-    try {
-      await Menu.removeDish(Number(dishId));
-      
-      ResponseUtil.success(ctx, null, '菜品删除成功');
-    } catch (error) {
-      logger.error('删除菜品失败', { dishId, userId: user.userId, error });
-      throw error;
-    }
-  }
-
-  /**
-   * 获取用户投票记录
-   */
-  static async getUserVotes(ctx: any): Promise<void> {
-    const user = ctx.state.user;
-    const menuId = ctx.params.menuId;
-
-    if (!user) {
-      throw new AuthenticationError('未认证的用户');
-    }
-
-    try {
-      const votes = await Menu.getUserVotes(Number(menuId), user.userId);
-      
-      ResponseUtil.success(ctx, votes, '获取用户投票记录成功');
-    } catch (error) {
-      logger.error('获取用户投票记录失败', { menuId, userId: user.userId, error });
       throw error;
     }
   }

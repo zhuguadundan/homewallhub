@@ -2,8 +2,13 @@ import winston from 'winston';
 import path from 'path';
 import fs from 'fs';
 
+// 允许通过环境变量 LOG_DIR 指定日志目录（默认 ../../logs）
+const resolvedLogDir = process.env.LOG_DIR
+  ? path.resolve(process.cwd(), process.env.LOG_DIR)
+  : path.join(__dirname, '../../logs');
+
 // 确保日志目录存在
-const logDir = path.join(__dirname, '../../logs');
+const logDir = resolvedLogDir;
 if (!fs.existsSync(logDir)) {
   fs.mkdirSync(logDir, { recursive: true });
 }

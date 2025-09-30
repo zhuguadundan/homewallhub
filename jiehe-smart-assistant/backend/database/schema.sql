@@ -137,6 +137,7 @@ CREATE TABLE IF NOT EXISTS food_items (
     barcode TEXT,
     unit TEXT DEFAULT 'kg', -- kg, g, L, ml, 个, 包, 盒, 瓶等
     default_expire_days INTEGER DEFAULT 7,
+    min_stock_threshold INTEGER DEFAULT 0,
     nutrition_info TEXT, -- JSON格式营养信息
     image TEXT,
     description TEXT,

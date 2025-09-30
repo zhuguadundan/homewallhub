@@ -9,6 +9,7 @@ import { DietAnalysisService, DietAnalysisResponse } from './DietAnalysisService
 import { CostAnalysisService, CostAnalysisResponse } from './CostAnalysisService'
 import { AIService } from './AIService'
 import { logger } from '../utils/logger'
+import { AIRequestType } from '../interfaces/ai'
 
 export interface ReportRequest {
   familyId: string
@@ -706,10 +707,11 @@ export class FamilyReportService {
     `
 
     const aiResponse = await this.aiService.makeRequest({
-      type: 'family_report',
-      content: prompt,
+      prompt,
+      context: undefined,
       familyId: response.familyId,
-      userId: response.familyId
+      userId: response.familyId,
+      requestType: AIRequestType.GENERAL_ASSISTANT
     })
 
     return aiResponse.content

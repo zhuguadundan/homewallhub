@@ -102,6 +102,7 @@ export class ResponseUtil {
    * 无内容响应
    */
   static noContent(ctx: Context, message: string = '操作成功'): void {
+    // 为确保客户端一致性与兼容性，返回 200 并携带统一响应结构
     const response: ApiResponse = {
       success: true,
       message,
@@ -109,7 +110,7 @@ export class ResponseUtil {
       path: ctx.path,
     };
 
-    ctx.status = 204;
+    ctx.status = 200;
     ctx.body = response;
   }
 }

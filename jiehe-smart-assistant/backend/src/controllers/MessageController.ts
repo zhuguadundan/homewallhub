@@ -2,9 +2,9 @@ import { Context } from 'koa';
 import { Message } from '../models/Message';
 import { ResponseUtil } from '../utils/response';
 import { logger } from '../utils/logger';
-import { AuthenticationError, ValidationError } from '../middlewares/errorHandler';
+import { AuthenticationError, ValidationError, NotFoundError, AuthorizationError } from '../middlewares/errorHandler';
 import { Validator } from '../utils/validation';
-import { socketManager } from '../middleware/socket';
+import { socketManager } from '../middlewares/socket';
 
 export class MessageController {
   /**
@@ -20,22 +20,22 @@ export class MessageController {
     const queryParams = {
       message_type: ctx.query.message_type as string,
       category: ctx.query.category as string,
-      priority: ctx.query.priority as string,
+      priority: ctx.query.priority ? Number(ctx.query.priority) : undefined,
       is_pinned: ctx.query.is_pinned ? ctx.query.is_pinned === 'true' : undefined,
       mentioned_user: ctx.query.mentioned_user as string,
       search: ctx.query.search as string,
       start_date: ctx.query.start_date as string,
       end_date: ctx.query.end_date as string,
       page: parseInt(ctx.query.page as string) || 1,
-      limit: Math.min(parseInt(ctx.query.limit as string) || 20, 50),
-      sort_by: ctx.query.sort_by as 'created_at' | 'updated_at' | 'priority' | 'category' || 'created_at',
-      sort_order: ctx.query.sort_order as 'asc' | 'desc' || 'desc'
-    };
+      pageSize: Math.min(parseInt(ctx.query.limit as string) || 20, 50),
+      sort_by: (ctx.query.sort_by as any) || 'created_at',
+      sort_order: (ctx.query.sort_order as any) || 'desc'
+    } as any;
 
     try {
-      const result = await Message.getFamilyMessages(user.familyId, queryParams);
+      const result = await Message.getFamilyMessages(user.familyId, user.userId, queryParams);
       
-      ResponseUtil.paginated(ctx, result.messages, result.pagination, '获取留言列表成功');
+      ResponseUtil.paginated(ctx, result.messages, result.pagination as any, '获取留言列表成功');
     } catch (error) {
       logger.error('获取留言列表失败', { familyId: user.familyId, userId: user.userId, error });
       throw error;
@@ -85,12 +85,12 @@ export class MessageController {
     }
 
     try {
-      const messageData = {
+      const messageData: any = {
         ...validation.data,
         family_id: user.familyId
       };
 
-      const message = await Message.createMessage(messageData, user.userId);
+      const message = await Message.createMessage(messageData, user.familyId, user.userId);
       
       logger.info('留言创建成功', {
         messageId: message.id,
@@ -106,13 +106,13 @@ export class MessageController {
         content: message.content,
         userId: user.userId,
         userName: user.username,
-        mentionedUsers: message.mentioned_users,
-        category: message.category,
+        mentionedUsers: messageData.mentions || [],
+        category: (message as any).category_id || null,
         isPinned: message.is_pinned,
         timestamp: new Date().toISOString()
       });
-      if (Array.isArray(message.mentioned_users)) {
-        for (const uid of message.mentioned_users) {
+      if (Array.isArray(messageData.mentions)) {
+        for (const uid of messageData.mentions) {
           socketManager.emitToUser(uid, 'message:mention', {
             messageId: message.id,
             title: message.title,
@@ -389,13 +389,13 @@ export class MessageController {
 
     try {
       // 获取用户的所有未读留言
-      const unreadMessages = await Message.getFamilyMessages(user.familyId, {
-        limit: 1000 // 假设最多1000条未读
-      });
+      const unreadMessages = await Message.getFamilyMessages(user.familyId, user.userId, {
+        pageSize: 1000 // 假设最多1000条
+      } as any);
 
       // 标记所有留言为已读
       for (const message of unreadMessages.messages) {
-        if (message.user_id !== user.userId) {
+        if ((message as any).author_id !== user.userId) {
           await Message.markAsRead(message.id, user.userId);
         }
       }

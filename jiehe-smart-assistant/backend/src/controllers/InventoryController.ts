@@ -90,7 +90,7 @@ export class InventoryController {
       sort_by: (ctx.query.sort_by as any) || 'created_at',
       sort_order: (ctx.query.sort_order as any) || 'DESC',
       page: parseInt(ctx.query.page as string) || 1,
-      page_size: parseInt(ctx.query.page_size as string) || 20
+      pageSize: parseInt(ctx.query.page_size as string) || 20
     };
 
     try {
@@ -120,8 +120,8 @@ export class InventoryController {
         throw new NotFoundError('库存物品不存在');
       }
 
-      // 获取物品批次信息
-      const batches = await Inventory.getItemBatches(itemId);
+      // 获取物品批次信息（限制家庭）
+      const batches = await Inventory.getItemBatchesByFamily(itemId, user.familyId);
 
       ResponseUtil.success(ctx, {
         ...item,
@@ -225,6 +225,7 @@ export class InventoryController {
   static async consumeStock(ctx: Context): Promise<void> {
     const user = ctx.state.user;
     const itemId = ctx.params.itemId;
+    const familyId = ctx.params.familyId;
     
     if (!user) {
       throw new AuthenticationError('未认证的用户');
@@ -243,7 +244,7 @@ export class InventoryController {
     const { quantity, reason } = result.data;
 
     try {
-      await Inventory.consumeItem(itemId, quantity, user.userId, reason);
+      await Inventory.consumeItemInFamily(itemId, familyId, quantity, user.userId, reason);
       
       logger.info('库存出库成功', {
         itemId,

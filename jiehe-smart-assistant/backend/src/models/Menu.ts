@@ -225,9 +225,18 @@ export class Menu {
 
     // 分页查询
     const offset = (page - 1) * page_size;
+    // 排序白名单映射
+    const sortFieldMap: Record<string, string> = {
+      menu_date: 'menu_date',
+      created_at: 'created_at',
+      updated_at: 'updated_at',
+    };
+    const safeSortBy = sortFieldMap[sort_by] || 'menu_date';
+    const safeSortOrder = (String(sort_order).toUpperCase() === 'ASC') ? 'ASC' : 'DESC';
+
     const menus = await dbAll<IMenu>(
       `SELECT * FROM menus ${whereClause} 
-       ORDER BY ${sort_by} ${sort_order} 
+       ORDER BY ${safeSortBy} ${safeSortOrder} 
        LIMIT ? OFFSET ?`,
       [...params, page_size, offset]
     );
@@ -740,9 +749,9 @@ export class Menu {
     return {
       menu: {
         id: menu.id,
-        name: menu.name,
-        description: menu.description,
-        target_date: menu.target_date,
+        name: (menu as any).title,
+        description: (menu as any).description,
+        target_date: (menu as any).menu_date,
         status: menu.status
       },
       overview: voteOverview || { total_voters: 0, total_votes: 0 },
